@@ -8,5 +8,22 @@
 </head>
 <body>
     <h1>Hello world!</h1>
+    <div class="counter">0</div>
+    <script>
+        
+        /// EXAMPLE FROM JS TO PYTHON USAGE ///
+        eel.expose(from_js_to_python)
+        function from_js_to_python(num) {
+            return num / 2
+        }
+
+        /// EXAMPLE FROM PYTHON TO JS USAGE ///
+        const handle_python = (num) => {
+            document.querySelector(".counter").innerHTML = num            
+        }
+
+        eel.from_python_to_js(10)(handle_python)
+
+    </script>
 </body>
 </html>
