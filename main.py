@@ -20,4 +20,11 @@ def handle_js(num):
 eel.from_js_to_python(10)(handle_js)
 
 ### EEL SETUP ###
-eel.start("index.html", size=(640, 480))
+
+eel_kwargs = dict(
+    host='localhost',
+    port=8080,
+    size=(1280, 800),
+)
+
+eel.start("index.html", **eel_kwargs)

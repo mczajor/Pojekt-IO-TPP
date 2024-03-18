@@ -64,7 +64,7 @@ class DataService(Singleton):
     def remove_rows(cls, row_identifiers: List[int|str]|int|str) -> None:
         if isinstance(row_identifiers, (int, str)):
             row_identifiers = [row_identifiers]
-
+        print(row_identifiers)
         cls._data = cls._data.drop(index=row_identifiers)
 
     @classmethod
@@ -76,7 +76,6 @@ class DataService(Singleton):
     def remove_columns(cls, columns: List[str]|str) -> None:
         if isinstance(columns, str):
             columns = [columns]
-
         cls._data = cls._data.drop(columns=columns)
 
     @classmethod
@@ -100,7 +99,6 @@ def DataService_data() -> Optional[str]:
 @eel.expose
 def DataService_load(data_path: str) -> str:
     return DataService.load(data_path).to_json()
-
 
 @eel.expose
 def DataService_save(data_path: Optional[str] = None) -> None:

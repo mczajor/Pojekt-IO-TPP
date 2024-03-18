@@ -1,0 +1,80 @@
+#change-container {
+    width: 80%;
+    height: 20vh;
+    margin: 1rem auto;
+  }
+  
+  #change-container button {
+    height: 2rem;
+    border: none;
+    border-radius: 5px;
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-right: 1rem;
+  }
+  
+  .change-btn{
+    background-color: rgb(218, 232, 252);
+    color: rgb(70, 130, 180);
+  }
+  
+  .change-btn:hover {
+    background-color: rgb(190, 214, 246);
+  }
+  
+  .delete-btn {
+    background-color: rgb(220, 153, 153);
+    color: rgb(120, 16, 16);
+  }
+  
+  .delete-btn:hover {
+    background-color: rgb(220, 20, 60);
+  }
+  
+  .delete-btn:focus {
+    outline: none; /* Usuwa domyślny styl focus */
+    box-shadow: 0 0 0 2px rgba(255, 0, 0, 0.5); /* Dodaje czerwoną obramówkę przy focusie */
+  }
+  
+  .change-input {
+    padding: 0.5rem 1rem;
+    border: 1px solid rgb(150, 150, 150);
+    border-radius: 5px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+  }
+  
+  .change-input:focus {
+    border-color: rgb(70, 130, 180);
+    outline: none;
+  }
+  
+  .input-btn-container {
+    display: flex;
+    align-items: center;
+    margin-top: 1rem;
+  }
+  
+  .input-btn-container .change-input {
+    margin-right: 1rem;
+  }
+
+  #save-btn{
+        color: rgb(23, 90, 53);
+  }
+
+  #save-btn:focus {
+    outline: none; /* Usuwa domyślny styl focus */
+    box-shadow: 0 0 0 2px rgba(10, 108, 54, 0.5); /* Dodaje czerwoną obramówkę przy focusie */
+  }
+
+  #save-btn:hover {
+    background-color: rgb(50, 205, 50); 
+  }
+  
+  
+  
+  

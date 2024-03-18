@@ -1,0 +1,65 @@
+#add-btn {
+    width: 100%;
+    height: 68vh;
+    font-size: 6rem;
+    font-family: Arial, Helvetica, sans-serif;
+    border: none;
+    color: grey
+  }
+  
+  #add-btn:hover {
+    opacity: 60%;
+  }
+  
+  #add-btn p {
+    font-size: 3rem;
+  }
+  
+  #main-container {
+    width: 80%;
+    height: 70vh;
+    margin: 0 auto;
+    border: 2px solid grey;
+    overflow: scroll;
+    border-top: none;
+  }
+
+  #file-name {
+    display: flex;
+    justify-content: center;
+    position: sticky;
+    left: 0px;
+  
+  }
+  
+  #file-name {
+    font-family: Arial, Helvetica, sans-serif;
+    color: black;
+  
+  }
+  
+  th, tr {
+      min-width: 10rem;
+      height: 2rem;
+      text-align: center;
+      background-color: white;
+  }
+  
+  .selected-row {
+      background-color: rgb(140, 200, 120);
+  }
+  
+  .selected-column {
+    background-color: rgb(142, 165, 192);
+  }
+  
+  th {
+    background-color: rgb(151, 192, 216);
+    position: sticky;
+    top: 0;
+  }
+  
+  table {
+    background-color: black;
+    margin-left: -2px;
+  }
