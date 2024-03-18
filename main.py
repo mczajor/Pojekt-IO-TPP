@@ -1,5 +1,9 @@
 import eel
 
+# these imports are required to load exposed functions
+from backend.file_service import FileService
+from backend.data_service import DataService
+
 ## INIT EEL ##
 eel.init('web')
 
@@ -16,4 +20,4 @@ def handle_js(num):
 eel.from_js_to_python(10)(handle_js)
 
 ### EEL SETUP ###
-eel.start("index.html", size = (320, 320))
+eel.start("index.html", size=(640, 480))
