@@ -1,6 +1,8 @@
 from enum import Enum, auto
 from pathlib import Path
 from typing import Optional, Dict, Any, List
+from tkinter import filedialog
+from tkinter import Tk
 
 import eel
 from pandas import DataFrame as Data
@@ -95,11 +97,17 @@ class DataService(Singleton):
 def DataService_data() -> Optional[str]:
     return DataService.data().to_json()
 
-
 @eel.expose
-def DataService_load(data_path: str) -> str:
-    return DataService.load(data_path).to_json()
+def DataService_load() -> str:
+    data_path = DataService_get_file_path()
+    DataService.load(data_path).to_json()
+    return data_path
 
+def DataService_get_file_path() -> str:
+    root = Tk()
+    root.filename = filedialog.askopenfilename(initialdir="/", title="Select file", filetypes=[("CSV files", "*.csv")])
+    root.destroy()
+    return root.filename
 @eel.expose
 def DataService_save(data_path: Optional[str] = None) -> None:
     DataService.save(data_path)

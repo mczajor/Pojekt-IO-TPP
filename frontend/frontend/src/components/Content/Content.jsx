@@ -1,19 +1,17 @@
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import {
-  downloadFileWithDelay,
   updateContent,
-  downloadFile,
   renameColumn,
   removeColumn,
   removeRow,
   modifyValueAt,
   saveToFile,
+  loadFile,
 } from "./pythonConection.js";
 import "../../styles/data_view.css";
 import "../../styles/change_data.css";
 
 export default function Content() {
-  const fileInputRef = useRef(null);
   const [selectedFileName, setSelectedFileName] = useState(undefined);
   const [fileContent, setFileContent] = useState([]);
   const [editMode, setEditMode] = useState(false);
@@ -23,17 +21,8 @@ export default function Content() {
   const [newValue, setNewValue] = useState("");
 
   async function handleClick() {
-    fileInputRef.current.click();
-  }
+    loadFile((filePath) => setSelectedFileName(filePath.split("/").pop()));
 
-  async function handleFileChange(event) {
-    const file = event.target.files[0];
-    const fileName = file.name;
-
-    await downloadFileWithDelay(file, 2000);
-    setSelectedFileName(fileName);
-
-    downloadFile(fileName);
     updateContent(updateFileContent_callback);
   }
 
@@ -44,6 +33,7 @@ export default function Content() {
 
   function changeName(currentValue) {
     setEditMode(true);
+    setSelectedRowIndex(-1);
     setSelectedColumnName(currentValue);
     setTempColumnName(currentValue);
   }
@@ -67,6 +57,7 @@ export default function Content() {
 
   function deleteRow() {
     removeRow(+selectedRowIndex); // konwerujemy na int
+    setEditMode(false);
     setSelectedRowIndex(-1);
     updateContent(updateFileContent_callback);
   }
@@ -92,14 +83,6 @@ export default function Content() {
       <button id="add-btn" onClick={handleClick}>
         +<p>Dodaj plik by rozpocząć analizę</p>
       </button>
-
-      <input
-        type="file"
-        accept=".csv"
-        ref={fileInputRef}
-        style={{ display: "none" }}
-        onChange={handleFileChange}
-      />
     </div>
   );
 
@@ -147,7 +130,8 @@ export default function Content() {
                             ? "selected-row "
                             : "") +
                           " " +
-                          (column === selectedColumnName
+                          (column === selectedColumnName &&
+                          selectedRowIndex == -1
                             ? "selected-column"
                             : "")
                         }
@@ -194,25 +178,27 @@ export default function Content() {
                   Usuń kolumnę
                 </button>
               </div>
-              <div className="input-btn-container">
-                <input
-                  type="text"
-                  value={newValue}
-                  placeholder={
-                    "(" + selectedRowIndex + ", " + selectedColumnName + ")"
-                  }
-                  onChange={handleNewValue}
-                  className="change-input"
-                />
-                <button onClick={changeValue} className="change-btn">
-                  Zmień wartość
-                </button>
-                {selectedRowIndex !== -1 && (
-                  <button onClick={deleteRow} className="delete-btn">
-                    Usuń rząd: {selectedRowIndex}
+              {selectedRowIndex != -1 && (
+                <div className="input-btn-container">
+                  <input
+                    type="text"
+                    value={newValue}
+                    placeholder={
+                      "(" + selectedRowIndex + ", " + selectedColumnName + ")"
+                    }
+                    onChange={handleNewValue}
+                    className="change-input"
+                  />
+                  <button onClick={changeValue} className="change-btn">
+                    Zmień wartość
                   </button>
-                )}
-              </div>
+                  {selectedRowIndex !== -1 && (
+                    <button onClick={deleteRow} className="delete-btn">
+                      Usuń rząd: {selectedRowIndex}
+                    </button>
+                  )}
+                </div>
+              )}
             </>
           )}
           {selectedFileName !== undefined && (

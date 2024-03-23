@@ -25,6 +25,7 @@ eel_kwargs = dict(
     host='localhost',
     port=8080,
     size=(1280, 800),
+    mode=None,
 )
 
 eel.start("index.html", **eel_kwargs)
