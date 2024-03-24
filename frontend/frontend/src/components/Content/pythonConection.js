@@ -1,31 +1,12 @@
 export const eel = window.eel;
 eel.set_host("ws://localhost:8080");
-
-export async function downloadFileWithDelay(file, delay) {
-    const blobUrl = window.URL.createObjectURL(file);
-    const link = document.createElement("a");
-    link.href = blobUrl;
-    link.download = file.name;
-    link.click();
-    return new Promise(resolve => setTimeout(() => {
-      window.URL.revokeObjectURL(blobUrl);
-      resolve();
-    }, delay));
-  }
   
   export function print_python_response(dataString) {
     console.log(dataString);
   }
 
   export async function updateContent(updateFileContent_callback) {
-    setTimeout(() => {
-      eel.DataService_data()(updateFileContent_callback);
-    }, 1000);
-  }
-
-  export function downloadFile(fileName){
-    eel.DataService_load("C:/Users/ltmol/Downloads/" + fileName);
-    // można dodać (print_python_response)
+      await eel.DataService_data()(updateFileContent_callback);
   }
 
   export function renameColumn(columnName, tempColumnName){
@@ -46,5 +27,9 @@ export async function downloadFileWithDelay(file, delay) {
   
   export function saveToFile(){  
     eel.DataService_save()
+  }
+
+  export function loadFile(setFileName) {
+    eel.DataService_load()(setFileName);
   }
   
