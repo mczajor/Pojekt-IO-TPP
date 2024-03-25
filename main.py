@@ -3,6 +3,7 @@ import eel
 # these imports are required to load exposed functions
 from backend.file_service import FileService
 from backend.data_service import DataService
+from backend.visualization_service import VisualizationService
 
 ## INIT EEL ##
 eel.init('web')
