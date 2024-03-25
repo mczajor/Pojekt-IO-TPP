@@ -321,3 +321,38 @@ def DataService_normalize(columns: Optional[List[str]] = None, numerical_method_
 
     DataService.normalize(columns, numerical, categorical)
 
+
+@eel.expose
+def DataService_clusterize(columns: List[str], clusterization_method_type: str|int, *args, **kwargs) -> np.ndarray:
+    clusterization_method: ClusterizationMethodType = _check_if_valid_enum(clusterization_method_type, ClusterizationMethodType)
+    return DataService.clusterize(columns, clusterization_method, *args, **kwargs)
+
+
+@eel.expose
+def DataService_clusterize_k_means(columns: List[str], cluster_count: int = 8) -> np.ndarray:
+    return DataService.clusterize_k_means(columns, cluster_count)
+
+
+@eel.expose
+def DataService_clusterize_density(columns: List[str], eps: float = 0.5, min_samples: int = 5) -> np.ndarray:
+    return DataService.clusterize_density(columns, eps, min_samples)
+
+
+@eel.expose
+def DataService_clusterize_agglomerative(columns: List[str], cluster_count: int = 2) -> np.ndarray:
+    return DataService.clusterize_agglomerative(columns, cluster_count)
+
+
+@eel.expose
+def DataService_clusterize_gaussian_mixture(columns: List[str], component_count: int = 1) -> np.ndarray:
+    return DataService.clusterize_gaussian_mixture(columns, component_count)
+
+
+@eel.expose
+def DataService_clusterize_affinity_propagation(columns: List[str], damping: float = 0.5, iteration_count: int = 200) -> np.ndarray:
+    return DataService.clusterize_affinity_propagation(columns, damping, iteration_count)
+
+
+@eel.expose
+def DataService_clusterize_mean_shift(columns: List[str], iteration_count: int = 300) -> np.ndarray:
+    return DataService.clusterize_mean_shift(columns, iteration_count)
