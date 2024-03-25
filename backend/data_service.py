@@ -8,6 +8,8 @@ import eel
 import numpy as np
 from pandas import DataFrame as Data
 import pandas as pd
+from sklearn.cluster import KMeans, DBSCAN, AgglomerativeClustering, AffinityPropagation, MeanShift
+from sklearn.mixture import GaussianMixture
 
 from backend.file_service import FileService
 from backend.singleton import Singleton
@@ -32,6 +34,15 @@ class NumericalNormalizationType(Enum):
 class CategoricalNormalizationType(Enum):
     LABEL = 0
     ONE_HOT = auto()
+
+
+class ClusterizationMethodType(Enum):
+    K_MEANS = 0
+    DBSCAN = auto()
+    AGGLOMERATIVE = auto()
+    GAUSSIAN = auto()
+    AFFINITY = auto()
+    MEAN_SHIFT = auto()
 
 
 class DataService(Singleton):
@@ -153,6 +164,62 @@ class DataService(Singleton):
             cls.normalize_numerical(numerical_to_normalize, numerical_method)
         if categorical_to_normalize:
             cls.normalize_categorical(categorical_to_normalize, categorical_method)
+
+    @classmethod
+    def clusterize(cls, columns: List[str], clusterizationMethod: ClusterizationMethodType, *args, **kwargs) -> np.ndarray:
+        match clusterizationMethod:
+            case ClusterizationMethodType.K_MEANS:
+                clusters = cls.clusterize_k_means(columns, *args, **kwargs)
+            case ClusterizationMethodType.DBSCAN:
+                clusters = cls.clusterize_density(columns, *args, **kwargs)
+            case ClusterizationMethodType.AGGLOMERATIVE:
+                clusters = cls.clusterize_agglomerative(columns, *args, **kwargs)
+            case ClusterizationMethodType.GAUSSIAN:
+                clusters = cls.clusterize_gaussian_mixture(columns, *args, **kwargs)
+            case ClusterizationMethodType.AFFINITY:
+                clusters = cls.clusterize_affinity_propagation(columns, *args, **kwargs)
+            case ClusterizationMethodType.MEAN_SHIFT:
+                clusters = cls.clusterize_mean_shift(columns, *args, **kwargs)
+            case _:
+                raise ValueError('Invalid clusterization method type value.')
+
+        return clusters
+
+    @classmethod
+    def clusterize_k_means(cls, columns: List[str], cluster_count: int = 8) -> np.ndarray:
+        kmeans: KMeans = KMeans(n_clusters=cluster_count)
+        clusters: np.ndarray = kmeans.fit_predict(cls._data[columns])
+        return clusters
+
+    @classmethod
+    def clusterize_density(cls, columns: List[str], eps: float = 0.5, min_samples: int = 5) -> np.ndarray:
+        dbscan: DBSCAN = DBSCAN(eps=eps, min_samples=min_samples)
+        clusters: np.ndarray = dbscan.fit_predict(cls._data[columns])
+        return clusters
+
+    @classmethod
+    def clusterize_agglomerative(cls, columns: List[str], cluster_count: int = 2) -> np.ndarray:
+        agg_clustering: AgglomerativeClustering = AgglomerativeClustering(n_clusters=cluster_count)
+        clusters: np.ndarray = agg_clustering.fit_predict(cls._data[columns])
+        return clusters
+
+    @classmethod
+    def clusterize_gaussian_mixture(cls, columns: List[str], component_count: int = 1) -> np.ndarray:
+        gmm: GaussianMixture = GaussianMixture(n_components=component_count)
+        clusters: np.ndarray = gmm.fit_predict(cls._data[columns])
+        return clusters
+
+    @classmethod
+    def clusterize_affinity_propagation(cls, columns: List[str], damping: float = 0.5, iteration_count: int = 200) -> np.ndarray:
+        affinity_prop: AffinityPropagation = AffinityPropagation(damping=damping, max_iter=iteration_count)
+        clusters: np.ndarray = affinity_prop.fit_predict(cls._data[columns])
+        return clusters
+
+    @classmethod
+    def clusterize_mean_shift(cls, columns: List[str], iteration_count: int = 300) -> np.ndarray:
+        mean_shift: MeanShift = MeanShift(max_iter=iteration_count)
+        clusters: np.ndarray = mean_shift.fit_predict(cls._data[columns])
+        return clusters
 
 
 def _check_if_valid_enum(value: str|int, enum: Type[Enum]) -> Enum:
