@@ -1,14 +1,17 @@
 from enum import Enum, auto
 from pathlib import Path
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Type
 from tkinter import filedialog
 from tkinter import Tk
 
 import eel
+import numpy as np
 from pandas import DataFrame as Data
+import pandas as pd
 
 from backend.file_service import FileService
 from backend.singleton import Singleton
+from sklearn.preprocessing import StandardScaler, LabelEncoder, MinMaxScaler, OneHotEncoder
 
 
 class DataEditOperationType(Enum):
@@ -19,6 +22,16 @@ class DataEditOperationType(Enum):
     RENAME_ROW = auto()
     RENAME_COLUMN = auto()
     MODIFY_VALUE = auto()
+
+
+class NumericalNormalizationType(Enum):
+    MIN_MAX = 0
+    STANDARDIZATION = auto()
+
+
+class CategoricalNormalizationType(Enum):
+    LABEL = 0
+    ONE_HOT = auto()
 
 
 class DataService(Singleton):
@@ -66,7 +79,6 @@ class DataService(Singleton):
     def remove_rows(cls, row_identifiers: List[int|str]|int|str) -> None:
         if isinstance(row_identifiers, (int, str)):
             row_identifiers = [row_identifiers]
-        print(row_identifiers)
         cls._data = cls._data.drop(index=row_identifiers)
 
     @classmethod
@@ -92,22 +104,83 @@ class DataService(Singleton):
     def modify_value_at(cls, row: str|int, column_name: str, new_value: Any) -> None:
         cls._data.at[row, column_name] = new_value
 
+    @staticmethod
+    def get_file_path() -> str:
+        root: Tk = Tk()
+        root.filename = filedialog.askopenfilename(initialdir="/", title="Select file", filetypes=[("CSV files", "*.csv")])
+        root.destroy()
+        return root.filename
+
+    @classmethod
+    def normalize_numerical(cls, columns: List[str], method: NumericalNormalizationType = NumericalNormalizationType.MIN_MAX) -> None:
+        match method:
+            case NumericalNormalizationType.MIN_MAX:
+                scaler: MinMaxScaler = MinMaxScaler()
+            case NumericalNormalizationType.STANDARDIZATION:
+                scaler: StandardScaler = StandardScaler()
+            case _:
+                raise ValueError('Invalid numerical normalization type value.')
+
+        cls._data[columns] = scaler.fit_transform(cls._data[columns])
+
+    @classmethod
+    def normalize_categorical(cls, columns: List[str], method: CategoricalNormalizationType = CategoricalNormalizationType.LABEL) -> None:
+        match method:
+            case CategoricalNormalizationType.LABEL:
+                encoder: LabelEncoder = LabelEncoder()
+            case CategoricalNormalizationType.ONE_HOT:
+                encoder: OneHotEncoder = OneHotEncoder()
+            case _:
+                raise ValueError('Invalid categorical normalization type value.')
+
+        for column in columns:
+            cls._data[column] = encoder.fit_transform(cls._data[column])
+
+    @classmethod
+    def normalize(cls, columns: Optional[List[str]] = None,
+                  numerical_method: NumericalNormalizationType = NumericalNormalizationType.MIN_MAX,
+                  categorical_method: CategoricalNormalizationType = CategoricalNormalizationType.LABEL) -> None:
+        if columns is None:
+            columns = cls._data.columns
+
+        numerical_columns: List[pd.Index] = cls._data.select_dtypes(include=[np.number]).columns.tolist()
+        categorical_columns: List[pd.Index] = cls._data.select_dtypes(include=[np.object]).columns.tolist()
+
+        numerical_to_normalize: List[str] = list(set(columns) & set(numerical_columns))
+        categorical_to_normalize: List[str] = list(set(columns) & set(categorical_columns))
+
+        if numerical_to_normalize:
+            cls.normalize_numerical(numerical_to_normalize, numerical_method)
+        if categorical_to_normalize:
+            cls.normalize_categorical(categorical_to_normalize, categorical_method)
+
+
+def _check_if_valid_enum(value: str|int, enum: Type[Enum]) -> Enum:
+    if isinstance(value, int):
+        if value >= len(enum) or value < 0:
+            raise ValueError(f'Invalid edit type value! Integer value must be within range 0 to {len(enum) - 1}.')
+        else:
+            return enum(value)
+
+    try:
+        enum_value = enum[value]
+    except KeyError:
+        raise ValueError(f'Invalid edit type value! String value must be a valid {enum.__name__} enum member.')
+    return enum_value
+
 
 @eel.expose
 def DataService_data() -> Optional[str]:
     return DataService.data().to_json()
 
+
 @eel.expose
 def DataService_load() -> str:
-    data_path = DataService_get_file_path()
+    data_path = DataService.get_file_path()
     DataService.load(data_path).to_json()
     return data_path
 
-def DataService_get_file_path() -> str:
-    root = Tk()
-    root.filename = filedialog.askopenfilename(initialdir="/", title="Select file", filetypes=[("CSV files", "*.csv")])
-    root.destroy()
-    return root.filename
+
 @eel.expose
 def DataService_save(data_path: Optional[str] = None) -> None:
     DataService.save(data_path)
@@ -115,18 +188,7 @@ def DataService_save(data_path: Optional[str] = None) -> None:
 
 @eel.expose
 def DataService_modify(edit_type: str|int, *args, **kwargs) -> None:
-    if isinstance(edit_type, int):
-        if edit_type >= len(DataEditOperationType) or edit_type < 0:
-            raise ValueError(f'Invalid edit type value! Integer value must be within range 0 to {len(DataEditOperationType)-1}.')
-        else:
-            DataService.modify(DataEditOperationType(edit_type), *args, **kwargs)
-            return
-
-    try:
-        edit_type_enum: DataEditOperationType = DataEditOperationType[edit_type]
-    except KeyError:
-        raise ValueError('Invalid edit type value! String value must be a valid DataEditOperationType enum member.')
-    DataService.modify(edit_type_enum, *args, **kwargs)
+    DataService.modify(_check_if_valid_enum(edit_type, DataEditOperationType), *args, **kwargs)
 
 
 @eel.expose
@@ -162,3 +224,33 @@ def DataService_rename_column(old_name: str, new_name: str) -> None:
 @eel.expose
 def DataService_modify_value_at(row: str|int, column_name: str, new_value: Any) -> None:
     DataService.modify_value_at(row, column_name, new_value)
+
+
+@eel.expose
+def DataService_normalize_numerical(columns: List[str], method_type: str|int = None) -> None:
+    if method_type is None:
+        DataService.normalize_numerical(columns)
+    else:
+        DataService.normalize_numerical(columns, _check_if_valid_enum(method_type, NumericalNormalizationType))
+
+
+@eel.expose
+def DataService_normalize_categorical(columns: List[str], method_type: str|int = None) -> None:
+    if method_type is None:
+        DataService.normalize_numerical(columns)
+    else:
+        DataService.normalize_numerical(columns, _check_if_valid_enum(method_type, CategoricalNormalizationType))
+
+
+@eel.expose
+def DataService_normalize(columns: Optional[List[str]] = None, numerical_method_type: str|int = None, categorical_method_type: str|int = None) -> None:
+    numerical: Optional[NumericalNormalizationType] = NumericalNormalizationType.MIN_MAX
+    if numerical_method_type is not None:
+        numerical = _check_if_valid_enum(numerical_method_type, NumericalNormalizationType)
+
+    categorical: Optional[CategoricalNormalizationType] = CategoricalNormalizationType.LABEL
+    if categorical_method_type is not None:
+        categorical = _check_if_valid_enum(categorical_method_type, CategoricalNormalizationType)
+
+    DataService.normalize(columns, numerical, categorical)
+
