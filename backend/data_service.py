@@ -1,19 +1,19 @@
 from enum import Enum, auto
 from pathlib import Path
-from typing import Optional, Dict, Any, List, Type
-from tkinter import filedialog
 from tkinter import Tk
+from tkinter import filedialog
+from typing import Optional, Dict, Any, List, Type
 
 import eel
 import numpy as np
-from pandas import DataFrame as Data
 import pandas as pd
+from pandas import DataFrame as Data
 from sklearn.cluster import KMeans, DBSCAN, AgglomerativeClustering, AffinityPropagation, MeanShift
 from sklearn.mixture import GaussianMixture
+from sklearn.preprocessing import StandardScaler, LabelEncoder, MinMaxScaler, OneHotEncoder
 
 from backend.file_service import FileService
 from backend.singleton import Singleton
-from sklearn.preprocessing import StandardScaler, LabelEncoder, MinMaxScaler, OneHotEncoder
 
 
 class DataEditOperationType(Enum):
