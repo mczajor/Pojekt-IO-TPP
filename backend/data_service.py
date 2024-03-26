@@ -167,6 +167,8 @@ class DataService(Singleton):
 
     @classmethod
     def clusterize(cls, columns: List[str], clusterizationMethod: ClusterizationMethodType, *args, **kwargs) -> np.ndarray:
+        if columns is None:
+            columns = cls._data.columns
         match clusterizationMethod:
             case ClusterizationMethodType.K_MEANS:
                 clusters = cls.clusterize_k_means(columns, *args, **kwargs)
@@ -323,9 +325,9 @@ def DataService_normalize(columns: Optional[List[str]] = None, numerical_method_
 
 
 @eel.expose
-def DataService_clusterize(columns: List[str], clusterization_method_type: str|int, *args, **kwargs) -> np.ndarray:
+def DataService_clusterize(columns: List[str], clusterization_method_type: str|int, *args, **kwargs) -> str:
     clusterization_method: ClusterizationMethodType = _check_if_valid_enum(clusterization_method_type, ClusterizationMethodType)
-    return DataService.clusterize(columns, clusterization_method, *args, **kwargs)
+    return str(DataService.clusterize(columns, clusterization_method, *args, **kwargs))
 
 
 @eel.expose

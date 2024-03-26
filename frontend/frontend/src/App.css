@@ -38,13 +38,17 @@ select {
     margin-top: 1rem;
     display: flex;
     justify-content: center;
+    flex-direction: column;
+    align-items: center;
   }
 
-  #vizualize-btn{
-    position: absolute;
-    justify-self: center;
+  .analize-btn{
+    min-width: 7rem;
+    margin-top: 3rem;
   }
 
   .plot{
     margin-top: 2rem;
+    width: 700px;
+    height: 500px
   }

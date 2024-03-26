@@ -8,6 +8,7 @@ import {
 import { useState } from "react";
 
 import myImg from "../assets/obraz.png";
+import ClusterChart from "./ClusterChart";
 
 export default function Normalization({
   updateFileContent_callback,
@@ -23,6 +24,10 @@ export default function Normalization({
     selectedCategoricalNormalization,
     setSelectedCategoricalNormalization,
   ] = useState(0);
+  const [clusters, setClusters] = useState([]);
+  const [selectedClusterizeType, setselectedClusterizeType] =
+    useState(0);
+  const [plotColumnNames, setPlotColumnNames] = useState("");
 
   function vizualize_callback(response) {
     setImagePath(true);
@@ -36,9 +41,19 @@ export default function Normalization({
     setSelectedCategoricalNormalization(+event.target.value);
   }
 
+  function handleSelectedClusterizeTypeChange(event) {
+    setselectedClusterizeType(+event.target.value)
+  }
+
   function stopAdding() {
     setColumnsSet(new Set());
     setAddColumnsMode(false);
+  }
+
+  function convertStrToArr(input) {
+    const cleanedInput = (input = input.trim().slice(1, -1));
+    const numbers = cleanedInput.split(" ").map((element) => parseInt(element));
+    setClusters(numbers);
   }
 
   return (
@@ -77,7 +92,7 @@ export default function Normalization({
             !addColumnsMode ? setAddColumnsMode(true) : stopAdding();
           }}
         >
-          {!addColumnsMode ? "Dodaj kolumny" : "Przerwij dodawanie"}
+          {!addColumnsMode ? "Wybierz kolumny" : "Przerwij wybieranie"}
         </button>
 
         <button
@@ -100,16 +115,47 @@ export default function Normalization({
 
       <div className="plot-container">
         <button
-          id="vizualize-btn"
-          className="change-btn"
+          className="change-btn analize-btn"
           onClick={() => {
             viualizeData(vizualize_callback);
             updateContent(updateFileContent_callback);
           }}
         >
-          Wizualizuj
+          Wizualizuj PCA
         </button>
-        {imagePath && <img className="plot" src={myImg} alt="img"></img>}
+
+        {imagePath && (
+          <>
+            <img className="plot" src={myImg} alt="img"></img>
+          </>
+        )}
+
+
+        <div className="input-btn-container">
+          <h2>Wybierz metodę klasteryzacji:</h2>
+          <select
+            value={selectedClusterizeType}
+            onChange={handleSelectedClusterizeTypeChange}
+          >
+            <option value="">Wybierz metodę...</option>
+            <option value="0">K_Means</option>
+            <option value="1">Density</option>
+            <option value="2">Agglomerative</option>
+            <option value="3">GaussianMixture</option>
+            <option value="4">AffinityPropagation</option>
+            <option value="5">GaussianMixture</option>
+            <option value="6">MeanShift</option>
+          </select>
+        </div>
+        <button
+          className="change-btn analize-btn"
+          onClick={() => {clusterize([...columnsSet], selectedClusterizeType, convertStrToArr);
+          setPlotColumnNames([...columnsSet].length > 0 ? [...columnsSet].join(", ") : "Uwzględniono wszystkie kolumny")}}
+        >
+          Klasteryzuj
+        </button>
+
+        <ClusterChart clusters={clusters} columnNames={plotColumnNames} />
       </div>
     </>
   );
