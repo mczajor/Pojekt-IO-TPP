@@ -155,7 +155,7 @@ class DataService(Singleton):
             columns = cls._data.columns
 
         numerical_columns: List[pd.Index] = cls._data.select_dtypes(include=[np.number]).columns.tolist()
-        categorical_columns: List[pd.Index] = cls._data.select_dtypes(include=[np.object]).columns.tolist()
+        categorical_columns: List[pd.Index] = cls._data.select_dtypes(include=[object]).columns.tolist()    ## Dla wersji poniżej 1.23.5 np.object
 
         numerical_to_normalize: List[str] = list(set(columns) & set(numerical_columns))
         categorical_to_normalize: List[str] = list(set(columns) & set(categorical_columns))

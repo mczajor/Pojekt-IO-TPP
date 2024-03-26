@@ -58,6 +58,10 @@
     position: sticky;
     top: 0;
   }
+
+  .selected-th {
+    background-color: rgb(227, 133, 133);
+  }
   
   table {
     background-color: black;

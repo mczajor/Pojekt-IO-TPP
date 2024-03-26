@@ -1,11 +1,11 @@
 import React, { useState } from "react";
+import EditPanel from "../EditPanel.jsx";
 import {
   updateContent,
   renameColumn,
   removeColumn,
   removeRow,
   modifyValueAt,
-  saveToFile,
   loadFile,
 } from "./pythonConection.js";
 import "../../styles/data_view.css";
@@ -17,8 +17,24 @@ export default function Content() {
   const [editMode, setEditMode] = useState(false);
   const [selectedColumnName, setSelectedColumnName] = useState("");
   const [tempColumnName, setTempColumnName] = useState("");
-  const [selectedRowIndex, setSelectedRowIndex] = useState(-1);
+  const [selectedBackendRowIndex, setSelectedBackendRowIndex] = useState(-1);
+  const [selectedCurrentRowIndex, setSelectedCurrentRowIndex] = useState(-1);
   const [newValue, setNewValue] = useState("");
+  const [columnsSet, setColumnsSet] = useState(new Set());
+  const [addColumnsMode, setAddColumnsMode] = useState(false);
+
+  const columnNames = Object.keys(fileContent);
+
+  const handleToggleColumn = (columnName) => {
+    setEditMode(false)
+    if (columnsSet.has(columnName)) {
+      const newSet = new Set(columnsSet);
+      newSet.delete(columnName);
+      setColumnsSet(newSet);
+    } else {
+      setColumnsSet((prevSet) => new Set(prevSet).add(columnName));
+    }
+  };
 
   async function handleClick() {
     loadFile((filePath) => setSelectedFileName(filePath.split("/").pop()));
@@ -31,9 +47,16 @@ export default function Content() {
     setFileContent(data);
   }
 
+  function toggleAddColumnsMode(value){
+    setSelectedColumnName("");
+    setTempColumnName("");
+    setAddColumnsMode(value)
+  }
+
   function changeName(currentValue) {
     setEditMode(true);
-    setSelectedRowIndex(-1);
+    setSelectedBackendRowIndex(-1);
+    setSelectedCurrentRowIndex(-1);
     setSelectedColumnName(currentValue);
     setTempColumnName(currentValue);
   }
@@ -45,6 +68,7 @@ export default function Content() {
   function confirmChanges() {
     renameColumn(selectedColumnName, tempColumnName);
     updateContent(updateFileContent_callback);
+    setEditMode(false);
   }
 
   function deleteColumn(columnName) {
@@ -56,14 +80,18 @@ export default function Content() {
   }
 
   function deleteRow() {
-    removeRow(+selectedRowIndex); // konwerujemy na int
+    removeRow(+selectedBackendRowIndex); // konwerujemy na int
     setEditMode(false);
-    setSelectedRowIndex(-1);
+    setSelectedBackendRowIndex(-1);
+    setSelectedCurrentRowIndex(-1);
+    setTempColumnName("");
+    setSelectedColumnName("");
     updateContent(updateFileContent_callback);
   }
 
-  function clickFrame(row, column) {
-    setSelectedRowIndex(+row);
+  function clickFrame(currentRow, backendRow, column) {
+    setSelectedBackendRowIndex(+backendRow);
+    setSelectedCurrentRowIndex(currentRow);
     changeName(column);
   }
 
@@ -72,11 +100,10 @@ export default function Content() {
   }
 
   function changeValue() {
-    modifyValueAt(+selectedRowIndex, selectedColumnName, newValue); //konwerujemy na int
+    modifyValueAt(+selectedBackendRowIndex, selectedColumnName, newValue); //konwerujemy na int
     updateContent(updateFileContent_callback);
     setNewValue("");
   }
-  const columnNames = Object.keys(fileContent);
 
   let content = (
     <div id="main-container">
@@ -98,7 +125,17 @@ export default function Content() {
               <thead>
                 <tr>
                   {Object.keys(fileContent).map((column) => (
-                    <th key={column} onClick={() => changeName(column)}>
+                    <th
+                      className={
+                        columnsSet.has(column) ? "selected-th" : undefined
+                      }
+                      key={column}
+                      onClick={() =>
+                        !addColumnsMode
+                          ? changeName(column)
+                          : handleToggleColumn(column)
+                      }
+                    >
                       {column}
                     </th>
                   ))}
@@ -110,34 +147,36 @@ export default function Content() {
                 ].map((_, rowIndex) => (
                   <tr
                     key={rowIndex}
-                    onClick={() =>
-                      setSelectedRowIndex(
+                    onClick={() => {
+                      setSelectedBackendRowIndex(
                         +Object.keys(fileContent[columnNames[0]])[rowIndex]
-                      )
-                    }
+                      );
+                      setSelectedCurrentRowIndex(+rowIndex);
+                    }}
                   >
                     {columnNames.map((column) => (
                       <td
                         key={`${column}_${rowIndex}`}
                         onClick={() =>
                           clickFrame(
+                            rowIndex,
                             Object.keys(fileContent[columnNames[0]])[rowIndex],
                             column
                           )
                         }
                         className={
-                          (rowIndex === selectedRowIndex
+                          (rowIndex === selectedCurrentRowIndex
                             ? "selected-row "
                             : "") +
                           " " +
                           (column === selectedColumnName &&
-                          selectedRowIndex == -1
+                          selectedCurrentRowIndex === -1
                             ? "selected-column"
                             : "")
                         }
                         style={{
                           backgroundColor:
-                            selectedRowIndex === rowIndex &&
+                            selectedCurrentRowIndex === rowIndex &&
                             column === selectedColumnName
                               ? "rgb(68, 190, 59)"
                               : undefined,
@@ -158,61 +197,24 @@ export default function Content() {
           )}
         </div>
 
-        <div id="change-container">
-          {editMode && (
-            <>
-              <div className="input-btn-container">
-                <input
-                  type="text"
-                  value={tempColumnName}
-                  onChange={handleInputValues}
-                  className="change-input"
-                />
-                <button onClick={confirmChanges} className="change-btn">
-                  Zmień nazwę
-                </button>
-                <button
-                  onClick={() => deleteColumn(tempColumnName)}
-                  className="delete-btn"
-                >
-                  Usuń kolumnę
-                </button>
-              </div>
-              {selectedRowIndex != -1 && (
-                <div className="input-btn-container">
-                  <input
-                    type="text"
-                    value={newValue}
-                    placeholder={
-                      "(" + selectedRowIndex + ", " + selectedColumnName + ")"
-                    }
-                    onChange={handleNewValue}
-                    className="change-input"
-                  />
-                  <button onClick={changeValue} className="change-btn">
-                    Zmień wartość
-                  </button>
-                  {selectedRowIndex !== -1 && (
-                    <button onClick={deleteRow} className="delete-btn">
-                      Usuń rząd: {selectedRowIndex}
-                    </button>
-                  )}
-                </div>
-              )}
-            </>
-          )}
-          {selectedFileName !== undefined && (
-            <div className="input-btn-container">
-              <button
-                onClick={saveToFile}
-                className="selected-row"
-                id="save-btn"
-              >
-                Zapisz
-              </button>
-            </div>
-          )}
-        </div>
+        <EditPanel
+          editMode={editMode}
+          tempColumnName={tempColumnName}
+          selectedColumnName={selectedColumnName}
+          confirmChanges={confirmChanges}
+          deleteColumn={deleteColumn}
+          newValue={newValue}
+          handleInputValues={handleInputValues}
+          handleNewValue={handleNewValue}
+          changeValue={changeValue}
+          selectedCurrentRowIndex={selectedCurrentRowIndex}
+          deleteRow={deleteRow}
+          updateFileContent_callback={updateFileContent_callback}
+          columnsSet={columnsSet}
+          setAddColumnsMode={toggleAddColumnsMode}
+          addColumnsMode = {addColumnsMode}
+          setColumnsSet = {setColumnsSet}
+        />
       </>
     );
   }

@@ -32,4 +32,20 @@ eel.set_host("ws://localhost:8080");
   export function loadFile(setFileName) {
     eel.DataService_load()(setFileName);
   }
+
+  export function normalize(columns = null, selectedNumericalNormalization, selectedCategoricalNormalization){
+    if (columns.length === 0) {
+      eel.DataService_normalize(null, selectedNumericalNormalization, selectedCategoricalNormalization);
+    } else{
+      eel.DataService_normalize(columns, selectedNumericalNormalization, selectedCategoricalNormalization);
+    }
+    
+    
+  }
   
+  export function clusterize(columns, clusterization_method_type){
+    eel.DataService_clusterize(columns, clusterization_method_type)(print_python_response)
+}
+  export async function viualizeData(vizualize_callback){
+      await eel.VisualizationService_visualize_pca()(vizualize_callback)
+  }
