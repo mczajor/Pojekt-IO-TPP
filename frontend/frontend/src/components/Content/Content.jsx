@@ -100,7 +100,7 @@ export default function Content() {
   }
 
   function changeValue() {
-    modifyValueAt(+selectedBackendRowIndex, selectedColumnName, newValue); //konwerujemy na int
+    modifyValueAt(+selectedBackendRowIndex, selectedColumnName, +newValue); //konwerujemy na int
     updateContent(updateFileContent_callback);
     setNewValue("");
   }
