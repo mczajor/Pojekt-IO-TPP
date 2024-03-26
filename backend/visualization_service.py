@@ -1,3 +1,4 @@
+import base64
 import io
 from pathlib import Path
 
@@ -10,12 +11,14 @@ from sklearn.decomposition import PCA
 
 from backend.singleton import Singleton
 
+from backend.data_service import DataService
+
 
 class VisualizationService(Singleton):
     _default_save_path: Path = Path.home()
 
     @classmethod
-    def visualize_pca(cls, data: Data, component_count: int = 2) -> io.BytesIO:
+    def visualize_pca(cls, data: Data, component_count: int = 2) -> str:
         pca: PCA = PCA(n_components=component_count) # Wybierz liczbę komponentów głównych
 
         principal_components: np.ndarray = pca.fit_transform(data) # Dopasowanie modelu do danych
@@ -28,16 +31,18 @@ class VisualizationService(Singleton):
         plt.xlabel('Principal Component 1')
         plt.ylabel('Principal Component 2')
 
+        path = "frontend/frontend/src/assets/obraz.png"
         # Zapisz wykres jako bajty w pamięci
         img_bytes: io.BytesIO = io.BytesIO()
-        plt.savefig(img_bytes, format='png')
+        plt.savefig(path, format='png')
         img_bytes.seek(0)
 
         plt.clf() # Wyczyść obecny wykres, aby nie wyświetlał się na ekranie
 
-        return img_bytes
+        return path
 
 
 @eel.expose
-def VisualizationService_visualize_pca(data: Data, component_count: int = 2) -> io.BytesIO:
+def VisualizationService_visualize_pca(component_count: int = 2) -> str:
+    data = DataService.data()
     return VisualizationService.visualize_pca(data, component_count)
