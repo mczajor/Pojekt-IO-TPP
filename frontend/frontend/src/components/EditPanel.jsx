@@ -1,8 +1,5 @@
 import { saveToFile } from "./Content/pythonConection";
 
-
-import Normalization from "./Normalization";
-
 export default function EditPanel({
   editMode,
   tempColumnName,
@@ -15,15 +12,9 @@ export default function EditPanel({
   changeValue,
   selectedCurrentRowIndex,
   deleteRow,
-  updateFileContent_callback,
-  columnsSet,
-  setAddColumnsMode,
-  setColumnsSet,
-  addColumnsMode,
 }) {
-
   return (
-    <div id="change-container">
+    <>
       {editMode && (
         <>
           {selectedCurrentRowIndex === -1 && (
@@ -78,14 +69,6 @@ export default function EditPanel({
           Zapisz
         </button>
       </div>
-
-      <Normalization
-        updateFileContent_callback={updateFileContent_callback}
-        columnsSet = {columnsSet}
-        setAddColumnsMode = {setAddColumnsMode}
-        setColumnsSet = {setColumnsSet}
-        addColumnsMode = {addColumnsMode}
-      />
-    </div>
+    </>
   );
 }

@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import EditPanel from "../EditPanel.jsx";
+import Normalization from "../Normalization.jsx";
+import PCA from "../PCA.jsx";
 import {
   updateContent,
   renameColumn,
@@ -10,6 +12,7 @@ import {
 } from "./pythonConection.js";
 import "../../styles/data_view.css";
 import "../../styles/change_data.css";
+import Clusteriazation from "../Clusterization.jsx";
 
 export default function Content() {
   const [selectedFileName, setSelectedFileName] = useState(undefined);
@@ -26,7 +29,7 @@ export default function Content() {
   const columnNames = Object.keys(fileContent);
 
   const handleToggleColumn = (columnName) => {
-    setEditMode(false)
+    setEditMode(false);
     if (columnsSet.has(columnName)) {
       const newSet = new Set(columnsSet);
       newSet.delete(columnName);
@@ -47,10 +50,10 @@ export default function Content() {
     setFileContent(data);
   }
 
-  function toggleAddColumnsMode(value){
+  function toggleAddColumnsMode(value) {
     setSelectedColumnName("");
     setTempColumnName("");
-    setAddColumnsMode(value)
+    setAddColumnsMode(value);
   }
 
   function changeName(currentValue) {
@@ -196,25 +199,35 @@ export default function Content() {
             </table>
           )}
         </div>
-
-        <EditPanel
-          editMode={editMode}
-          tempColumnName={tempColumnName}
-          selectedColumnName={selectedColumnName}
-          confirmChanges={confirmChanges}
-          deleteColumn={deleteColumn}
-          newValue={newValue}
-          handleInputValues={handleInputValues}
-          handleNewValue={handleNewValue}
-          changeValue={changeValue}
-          selectedCurrentRowIndex={selectedCurrentRowIndex}
-          deleteRow={deleteRow}
-          updateFileContent_callback={updateFileContent_callback}
-          columnsSet={columnsSet}
-          setAddColumnsMode={toggleAddColumnsMode}
-          addColumnsMode = {addColumnsMode}
-          setColumnsSet = {setColumnsSet}
-        />
+        <div id="change-container">
+          <EditPanel
+            editMode={editMode}
+            tempColumnName={tempColumnName}
+            selectedColumnName={selectedColumnName}
+            confirmChanges={confirmChanges}
+            deleteColumn={deleteColumn}
+            newValue={newValue}
+            handleInputValues={handleInputValues}
+            handleNewValue={handleNewValue}
+            changeValue={changeValue}
+            selectedCurrentRowIndex={selectedCurrentRowIndex}
+            deleteRow={deleteRow}
+            updateFileContent_callback={updateFileContent_callback}
+            columnsSet={columnsSet}
+            setAddColumnsMode={toggleAddColumnsMode}
+            addColumnsMode={addColumnsMode}
+            setColumnsSet={setColumnsSet}
+          />
+          <Normalization
+            updateFileContent_callback={updateFileContent_callback}
+            columnsSet={columnsSet}
+            setAddColumnsMode={setAddColumnsMode}
+            setColumnsSet={setColumnsSet}
+            addColumnsMode={addColumnsMode}
+          />
+          <PCA />
+          <Clusteriazation columnsSet={columnsSet} />
+        </div>
       </>
     );
   }

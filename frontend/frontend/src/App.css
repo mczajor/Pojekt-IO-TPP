@@ -52,3 +52,8 @@ select {
     width: 700px;
     height: 500px
   }
+
+  .buttons-container{
+    margin-top: 1.5rem;
+    margin-left: 5rem;
+  }
