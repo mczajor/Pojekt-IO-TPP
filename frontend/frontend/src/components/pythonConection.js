@@ -5,7 +5,7 @@ export function print_python_response(dataString) {
   console.log(dataString);
 }
 
-export async function updateContent(updateFileContent_callback) {
+export async function data(updateFileContent_callback) {
   await eel.DataService_data()(updateFileContent_callback);
 }
 
@@ -34,27 +34,25 @@ export function loadFile(setFileName) {
 }
 
 export function normalize(
-  columns = null,
   selectedNumericalNormalization,
   selectedCategoricalNormalization
 ) {
-  columns.length === 0
-    ? eel.DataService_normalize(
-        null,
-        selectedNumericalNormalization,
-        selectedCategoricalNormalization
-      )
-    : eel.DataService_normalize(
-        columns,
-        selectedNumericalNormalization,
-        selectedCategoricalNormalization
-      );
+  eel.DataService_normalize(
+    null,
+    selectedNumericalNormalization,
+    selectedCategoricalNormalization
+  );
+}
+
+export function normalizedData(updateFileContent_callback){
+  eel.DataService_normalized_data()(updateFileContent_callback)
 }
 
 export function clusterize(
   columns,
   clusterization_method_type,
-  convertStrToArr
+  convertStrToArr,
+  selectedNbOfClusters = 2
 ) {
   columns.length === 0
     ? eel.DataService_clusterize(
@@ -63,9 +61,14 @@ export function clusterize(
       )(convertStrToArr)
     : eel.DataService_clusterize(
         columns,
-        clusterization_method_type
+        clusterization_method_type,
+        selectedNbOfClusters
       )(convertStrToArr);
 }
 export async function viualizeData(vizualize_callback) {
   await eel.VisualizationService_visualize_pca()(vizualize_callback);
+}
+
+export function getFileName(fileName_callback){
+  eel.DataService_file_name()(fileName_callback)
 }

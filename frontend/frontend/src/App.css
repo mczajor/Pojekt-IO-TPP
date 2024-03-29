@@ -47,13 +47,14 @@ select {
     margin-top: 3rem;
   }
 
-  .plot{
-    margin-top: 2rem;
-    width: 700px;
-    height: 500px
-  }
-
   .buttons-container{
     margin-top: 1.5rem;
     margin-left: 5rem;
   }
+
+  #cluster-input {
+    margin-left: 4rem;
+    width: 4rem;
+    text-align: center;
+  }
+

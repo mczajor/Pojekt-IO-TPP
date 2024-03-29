@@ -1,4 +1,4 @@
-import { saveToFile } from "./Content/pythonConection";
+import { saveToFile } from "./pythonConection";
 
 export default function EditPanel({
   editMode,

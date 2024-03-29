@@ -1,0 +1,30 @@
+
+  .data-body{
+    background-color: white;
+  }
+
+  #main-pca-container {
+    width: 80%;
+    height: 90vh;
+    margin: 0 auto;
+    border: 2px solid grey;
+    overflow: scroll;
+    border-top: none;
+  }
+
+  #pca-plot-container{
+    left: 0px;
+  }
+
+  #pca-h1 {
+    margin-bottom: 3rem;
+    text-align: center;
+  }
+
+  #plot-pca-sticky {
+   position: sticky;
+   display: flex;
+   justify-content: center;
+   margin-top: 2rem;
+   left: 0
+  }

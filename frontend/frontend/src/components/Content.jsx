@@ -1,20 +1,19 @@
 import React, { useState } from "react";
-import EditPanel from "../EditPanel.jsx";
-import Normalization from "../Normalization.jsx";
-import PCA from "../PCA.jsx";
+
 import {
-  updateContent,
   renameColumn,
   removeColumn,
   removeRow,
   modifyValueAt,
   loadFile,
+  getFileName,
 } from "./pythonConection.js";
-import "../../styles/data_view.css";
-import "../../styles/change_data.css";
-import Clusteriazation from "../Clusterization.jsx";
+import "../styles/data_view.css";
+import "../styles/change_data.css";
 
-export default function Content() {
+let prevFileName = undefined;
+
+export default function Content({ HelperComponent, updateDataContent }) {
   const [selectedFileName, setSelectedFileName] = useState(undefined);
   const [fileContent, setFileContent] = useState([]);
   const [editMode, setEditMode] = useState(false);
@@ -25,6 +24,25 @@ export default function Content() {
   const [newValue, setNewValue] = useState("");
   const [columnsSet, setColumnsSet] = useState(new Set());
   const [addColumnsMode, setAddColumnsMode] = useState(false);
+
+  const fileName = (filePath) => filePath.split("/").pop()
+  
+  function getFileName_callback(response) {
+    prevFileName = response;
+  }
+
+  function checkIfLoaded() {
+    if (selectedFileName !== undefined) {
+      return;
+    }
+    getFileName(getFileName_callback);
+    if (prevFileName !== undefined && prevFileName !== null && prevFileName !== "") {
+      updateDataContent(updateFileContent_callback);
+      setSelectedFileName(fileName(prevFileName));
+    }
+  }
+
+  checkIfLoaded();
 
   const columnNames = Object.keys(fileContent);
 
@@ -39,10 +57,11 @@ export default function Content() {
     }
   };
 
-  async function handleClick() {
-    loadFile((filePath) => setSelectedFileName(filePath.split("/").pop()));
-
-    updateContent(updateFileContent_callback);
+  async function handleAddFileClick() {
+    loadFile((filePath) => {setSelectedFileName(fileName(filePath));
+    prevFileName = fileName(filePath)});
+    
+    updateDataContent(updateFileContent_callback);
   }
 
   function updateFileContent_callback(dataString) {
@@ -70,13 +89,13 @@ export default function Content() {
 
   function confirmChanges() {
     renameColumn(selectedColumnName, tempColumnName);
-    updateContent(updateFileContent_callback);
+    updateDataContent(updateFileContent_callback);
     setEditMode(false);
   }
 
   function deleteColumn(columnName) {
     removeColumn(columnName);
-    updateContent(updateFileContent_callback);
+    updateDataContent(updateFileContent_callback);
     setEditMode(false);
     setTempColumnName("");
     setSelectedColumnName("");
@@ -89,7 +108,7 @@ export default function Content() {
     setSelectedCurrentRowIndex(-1);
     setTempColumnName("");
     setSelectedColumnName("");
-    updateContent(updateFileContent_callback);
+    updateDataContent(updateFileContent_callback);
   }
 
   function clickFrame(currentRow, backendRow, column) {
@@ -104,13 +123,14 @@ export default function Content() {
 
   function changeValue() {
     modifyValueAt(+selectedBackendRowIndex, selectedColumnName, +newValue); //konwerujemy na int
-    updateContent(updateFileContent_callback);
+    updateDataContent(updateFileContent_callback);
     setNewValue("");
   }
 
   let content = (
-    <div id="main-container">
-      <button id="add-btn" onClick={handleClick}>
+    <div id="main-container" style={{ overflow: "hidden" }}>
+      <div id="file-name"></div>
+      <button id="add-btn" onClick={handleAddFileClick}>
         +<p>Dodaj plik by rozpocząć analizę</p>
       </button>
     </div>
@@ -200,7 +220,7 @@ export default function Content() {
           )}
         </div>
         <div id="change-container">
-          <EditPanel
+          <HelperComponent
             editMode={editMode}
             tempColumnName={tempColumnName}
             selectedColumnName={selectedColumnName}
@@ -217,16 +237,8 @@ export default function Content() {
             setAddColumnsMode={toggleAddColumnsMode}
             addColumnsMode={addColumnsMode}
             setColumnsSet={setColumnsSet}
+            updateDataContent = {updateDataContent}
           />
-          <Normalization
-            updateFileContent_callback={updateFileContent_callback}
-            columnsSet={columnsSet}
-            setAddColumnsMode={setAddColumnsMode}
-            setColumnsSet={setColumnsSet}
-            addColumnsMode={addColumnsMode}
-          />
-          <PCA />
-          <Clusteriazation columnsSet={columnsSet} />
         </div>
       </>
     );

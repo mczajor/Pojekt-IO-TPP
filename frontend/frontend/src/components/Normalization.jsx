@@ -1,7 +1,6 @@
 import {
   normalize,
-  updateContent,
-} from "./Content/pythonConection";
+} from "./pythonConection";
 
 import { useState } from "react";
 import {
@@ -11,11 +10,7 @@ import {
 
 
 export default function Normalization({
-  updateFileContent_callback,
-  columnsSet,
-  setAddColumnsMode,
-  setColumnsSet,
-  addColumnsMode,
+  updateFileContent_callback, updateDataContent
 }) {
   const [selectedNumericalNormalization, setSelectedNumericalNormalization] =
     useState(0);
@@ -32,10 +27,7 @@ export default function Normalization({
     setSelectedCategoricalNormalization(+event.target.value);
   }
 
-  function stopAdding() {
-    setColumnsSet(new Set());
-    setAddColumnsMode(false);
-  }
+
 
   return (
     <>
@@ -76,26 +68,15 @@ export default function Normalization({
 
         <div className="buttons-container">
           <button
-            className={!addColumnsMode ? "change-btn" : "delete-btn"}
-            onClick={() => {
-              !addColumnsMode ? setAddColumnsMode(true) : stopAdding();
-            }}
-          >
-            {!addColumnsMode ? "Wybierz kolumny" : "Przerwij wybieranie"}
-          </button>
-
-          <button
             id="normalize-btn"
             className="selected-row"
             onClick={() => {
               normalize(
-                [...columnsSet],
                 selectedNumericalNormalization,
                 selectedCategoricalNormalization
               );
-              updateContent(updateFileContent_callback);
-              setAddColumnsMode(false);
-              setColumnsSet(new Set());
+              updateDataContent(updateFileContent_callback);
+              
             }}
           >
             Normalizuj
