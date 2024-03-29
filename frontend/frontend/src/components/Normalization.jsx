@@ -10,7 +10,7 @@ import {
 
 
 export default function Normalization({
-  updateFileContent_callback, updateDataContent
+  updateFileContent_callback, updateDataContent, setNormalized
 }) {
   const [selectedNumericalNormalization, setSelectedNumericalNormalization] =
     useState(0);
@@ -76,7 +76,7 @@ export default function Normalization({
                 selectedCategoricalNormalization
               );
               updateDataContent(updateFileContent_callback);
-              
+              setNormalized(true)
             }}
           >
             Normalizuj

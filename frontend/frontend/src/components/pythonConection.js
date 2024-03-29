@@ -52,12 +52,13 @@ export function clusterize(
   columns,
   clusterization_method_type,
   convertStrToArr,
-  selectedNbOfClusters = 2
+  selectedNbOfClusters = 2,
 ) {
   columns.length === 0
     ? eel.DataService_clusterize(
         null,
-        clusterization_method_type
+        clusterization_method_type,
+        selectedNbOfClusters
       )(convertStrToArr)
     : eel.DataService_clusterize(
         columns,

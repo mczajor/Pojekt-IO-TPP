@@ -17,8 +17,7 @@ export default function ClusterChart({ clusters, columnNames }) {
         <>
           <div>
             <h1>Klastry kolumn:</h1>
-            {columnNames}
-            
+            <p>{columnNames}</p>
           </div>
           <Plot
             data={[

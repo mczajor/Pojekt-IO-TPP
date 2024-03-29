@@ -19,6 +19,8 @@
   #pca-h1 {
     margin-bottom: 3rem;
     text-align: center;
+    position: sticky;
+    left: 0;
   }
 
   #plot-pca-sticky {

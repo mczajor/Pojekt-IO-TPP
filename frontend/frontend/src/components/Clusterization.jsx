@@ -2,6 +2,7 @@ import ClusterChart from "./ClusterChart";
 import { useState } from "react";
 import { clusterize } from "./pythonConection";
 import { clusterizationMethods } from "../operations/clusterizations";
+import "../styles/cluster.css";
 
 export default function Clusteriazation({
   columnsSet,
@@ -19,7 +20,7 @@ export default function Clusteriazation({
   }
 
   function convertStrToIntArr(input) {
-    setClusters(input['clusters'])
+    setClusters(input["clusters"]);
   }
 
   function handleInputOnChange(event) {
@@ -32,35 +33,37 @@ export default function Clusteriazation({
   }
 
   return (
-    <div className="plot-container">
-      <div className="input-btn-container">
-        <h2>Wybierz metodę klasteryzacji:</h2>
-        <select
-          value={selectedClusterizeType}
-          onChange={handleSelectedClusterizeTypeChange}
-        >
-          {Object.entries(clusterizationMethods).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
+    <div id="clusterize-buttons-container">
+      <div id="clusterize-options">
+        <div className="input-btn-container">
+          <h2>Wybierz metodę klasteryzacji:</h2>
+          <select
+            value={selectedClusterizeType}
+            onChange={handleSelectedClusterizeTypeChange}
+          >
+            {Object.entries(clusterizationMethods).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {[0, 2, 3].includes(selectedClusterizeType) && (
+          <div className="input-btn-container">
+            <h2 id="h2-cluster">Ilość klastrów:</h2>
+            <input
+              type="number"
+              value={selectedNbOfClusters}
+              className="change-input"
+              id="cluster-input"
+              onChange={handleInputOnChange}
+            />
+          </div>
+        )}
       </div>
 
-      {[0, 2, 3].includes(selectedClusterizeType) && (
-        <div className="input-btn-container">
-          <h2>Ilość klastrów:</h2>
-          <input
-            type="number"
-            value={selectedNbOfClusters}
-            className="change-input"
-            id="cluster-input"
-            onChange={handleInputOnChange}
-          />
-        </div>
-      )}
-
-      <div className="buttons-container">
+      <div id="clusterize-btn-container" className="buttons-container">
         <button
           className={!addColumnsMode ? "change-btn" : "delete-btn"}
           onClick={() => {
@@ -71,6 +74,7 @@ export default function Clusteriazation({
         </button>
 
         <button
+          id="clusterize-btn"
           className="change-btn analize-btn"
           onClick={() => {
             clusterize(
@@ -91,7 +95,9 @@ export default function Clusteriazation({
           Klasteryzuj
         </button>
       </div>
-      <ClusterChart clusters={clusters} columnNames={plotColumnNames} />
+      <div className="plot-container">
+        <ClusterChart clusters={clusters} columnNames={plotColumnNames} />
+      </div>
     </div>
   );
 }

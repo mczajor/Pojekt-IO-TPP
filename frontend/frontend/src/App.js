@@ -1,4 +1,5 @@
 import "./App.css";
+import { useState } from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import Header from "./components/Header.jsx";
 import Content from "./components/Content.jsx";
@@ -9,6 +10,9 @@ import PCA from "./components/PCA.jsx";
 import { data, normalizedData } from "./components/pythonConection.js";
 
 function App() {
+
+  const [normalized, setNormalized] = useState(false)
+
   return (
     <Router>
       <div>
@@ -21,6 +25,7 @@ function App() {
                 key="data"
                 HelperComponent={EditPanel}
                 updateDataContent={data}
+                setNormalized = {setNormalized}
               />
             }
           />
@@ -31,10 +36,11 @@ function App() {
                 key="normalization"
                 HelperComponent={Normalization}
                 updateDataContent={normalizedData}
+                setNormalized = {setNormalized}
               />
             }
           />
-          <Route path="pca" element={<PCA />} />
+          <Route path="pca" element={<PCA normalized = {normalized}/>} />
           <Route
             path="klasteryzacja"
             element={

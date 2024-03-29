@@ -11,7 +11,7 @@ import "../styles/data_view.css";
 import "../styles/change_data.css";
 import AddFile from "./AddFile.jsx";
 
-export default function Content({ HelperComponent, updateDataContent }) {
+export default function Content({ HelperComponent, updateDataContent, setNormalized }) {
   const [selectedFileName, setSelectedFileName] = useState(undefined);
   const [fileContent, setFileContent] = useState([]);
   const [editMode, setEditMode] = useState(false);
@@ -228,6 +228,7 @@ export default function Content({ HelperComponent, updateDataContent }) {
             addColumnsMode={addColumnsMode}
             setColumnsSet={setColumnsSet}
             updateDataContent={updateDataContent}
+            setNormalized = {setNormalized}
           />
         </div>
       </>

@@ -12,6 +12,7 @@ export default function EditPanel({
   changeValue,
   selectedCurrentRowIndex,
   deleteRow,
+  setNormalized,
 }) {
   return (
     <>
@@ -25,11 +26,20 @@ export default function EditPanel({
                 onChange={handleInputValues}
                 className="change-input"
               />
-              <button onClick={confirmChanges} className="change-btn">
+              <button
+                onClick={() => {
+                  confirmChanges();
+                  setNormalized(false);
+                }}
+                className="change-btn"
+              >
                 Zmień nazwę
               </button>
               <button
-                onClick={() => deleteColumn(tempColumnName)}
+                onClick={() => {
+                  deleteColumn(tempColumnName);
+                  setNormalized(false);
+                }}
                 className="delete-btn"
               >
                 Usuń kolumnę
@@ -51,11 +61,23 @@ export default function EditPanel({
                 onChange={handleNewValue}
                 className="change-input"
               />
-              <button onClick={changeValue} className="change-btn">
+              <button
+                onClick={() => {
+                  changeValue();
+                  setNormalized(false);
+                }}
+                className="change-btn"
+              >
                 Zmień wartość
               </button>
               {selectedCurrentRowIndex !== -1 && (
-                <button onClick={deleteRow} className="delete-btn">
+                <button
+                  onClick={() => {
+                    deleteRow();
+                    setNormalized(false);
+                  }}
+                  className="delete-btn"
+                >
                   Usuń rząd: {selectedCurrentRowIndex}
                 </button>
               )}

@@ -3,7 +3,7 @@ import { useState } from "react";
 import Plot from "react-plotly.js";
 import "../styles/pca.css";
 
-export default function PCA() {
+export default function PCA({ normalized }) {
   const [data, setData] = useState({
     columnVector: [],
     eigenvector_1: [],
@@ -13,7 +13,6 @@ export default function PCA() {
   });
 
   function vizualize_callback(response) {
-    console.log(response)
     let columnVector = ["Component", ...response["column_vector"]];
     let eigenvector_1 = ["Principal 1", ...response["eigenvector_1"]];
     let eigenvector_2 = ["Principal 2", ...response["eigenvector_2"]];
@@ -29,21 +28,17 @@ export default function PCA() {
     });
   }
 
+  if (data["x"].length === 0 && normalized) {
+    viualizeData(vizualize_callback);
+  }
+
   return (
     <div id="main-pca-container">
-      {data["x"].length === 0 && (
-        <div id="change-container" className="plot-container">
-          <button
-            className="change-btn analize-btn"
-            onClick={() => {
-              viualizeData(vizualize_callback);
-            }}
-          >
-            Wizualizuj PCA
-          </button>
-        </div>
+      {!normalized && (
+        <>
+          <h1 id="pca-h1">Musisz najpierw znormalizować dane</h1>{" "}
+        </>
       )}
-
       {data["x"].length > 0 && (
         <>
           <div id="plot-pca-sticky">

@@ -34,14 +34,6 @@ select {
     box-shadow: 0 0 0 2px rgba(51, 51, 51, 0.2); 
   }
 
-  .plot-container {
-    margin-top: 1rem;
-    display: flex;
-    justify-content: center;
-    flex-direction: column;
-    align-items: center;
-  }
-
   .analize-btn{
     min-width: 7rem;
     margin-top: 3rem;
@@ -51,10 +43,3 @@ select {
     margin-top: 1.5rem;
     margin-left: 5rem;
   }
-
-  #cluster-input {
-    margin-left: 4rem;
-    width: 4rem;
-    text-align: center;
-  }
-
