@@ -5,13 +5,11 @@ import {
   removeColumn,
   removeRow,
   modifyValueAt,
-  loadFile,
   getFileName,
 } from "./pythonConection.js";
 import "../styles/data_view.css";
 import "../styles/change_data.css";
-
-let prevFileName = undefined;
+import AddFile from "./AddFile.jsx";
 
 export default function Content({ HelperComponent, updateDataContent }) {
   const [selectedFileName, setSelectedFileName] = useState(undefined);
@@ -25,10 +23,13 @@ export default function Content({ HelperComponent, updateDataContent }) {
   const [columnsSet, setColumnsSet] = useState(new Set());
   const [addColumnsMode, setAddColumnsMode] = useState(false);
 
-  const fileName = (filePath) => filePath.split("/").pop()
-  
+  const fileName = (filePath) => filePath.split("/").pop();
+
   function getFileName_callback(response) {
-    prevFileName = response;
+    if (response !== ""){
+      updateDataContent(updateFileContent_callback);
+      setSelectedFileName(fileName(response));
+    }
   }
 
   function checkIfLoaded() {
@@ -36,10 +37,6 @@ export default function Content({ HelperComponent, updateDataContent }) {
       return;
     }
     getFileName(getFileName_callback);
-    if (prevFileName !== undefined && prevFileName !== null && prevFileName !== "") {
-      updateDataContent(updateFileContent_callback);
-      setSelectedFileName(fileName(prevFileName));
-    }
   }
 
   checkIfLoaded();
@@ -56,14 +53,7 @@ export default function Content({ HelperComponent, updateDataContent }) {
       setColumnsSet((prevSet) => new Set(prevSet).add(columnName));
     }
   };
-
-  async function handleAddFileClick() {
-    loadFile((filePath) => {setSelectedFileName(fileName(filePath));
-    prevFileName = fileName(filePath)});
-    
-    updateDataContent(updateFileContent_callback);
-  }
-
+ 
   function updateFileContent_callback(dataString) {
     let data = JSON.parse(dataString);
     setFileContent(data);
@@ -128,12 +118,12 @@ export default function Content({ HelperComponent, updateDataContent }) {
   }
 
   let content = (
-    <div id="main-container" style={{ overflow: "hidden" }}>
-      <div id="file-name"></div>
-      <button id="add-btn" onClick={handleAddFileClick}>
-        +<p>Dodaj plik by rozpocząć analizę</p>
-      </button>
-    </div>
+    <AddFile
+      updateDataContent={updateDataContent}
+      updateFileContent_callback={updateFileContent_callback}
+      fileName={fileName}
+      setSelectedFileName={setSelectedFileName}
+    />
   );
 
   if (selectedFileName !== undefined) {
@@ -237,7 +227,7 @@ export default function Content({ HelperComponent, updateDataContent }) {
             setAddColumnsMode={toggleAddColumnsMode}
             addColumnsMode={addColumnsMode}
             setColumnsSet={setColumnsSet}
-            updateDataContent = {updateDataContent}
+            updateDataContent={updateDataContent}
           />
         </div>
       </>

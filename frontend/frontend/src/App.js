@@ -15,17 +15,45 @@ function App() {
         <Header />
         <Routes>
           <Route
-            path="dane"
-            element={<Content key="data" HelperComponent={EditPanel} updateDataContent={data}/>}
+            path=""
+            element={
+              <Content
+                key="data"
+                HelperComponent={EditPanel}
+                updateDataContent={data}
+              />
+            }
           />
           <Route
             path="normalizacja"
-            element={<Content key="normalization" HelperComponent={Normalization} updateDataContent={normalizedData}/>}
+            element={
+              <Content
+                key="normalization"
+                HelperComponent={Normalization}
+                updateDataContent={normalizedData}
+              />
+            }
           />
           <Route path="pca" element={<PCA />} />
           <Route
             path="klasteryzacja"
-            element={<Content key="clusterize" HelperComponent={Clusteriazation} updateDataContent={data}/>}
+            element={
+              <Content
+                key="clusterize"
+                HelperComponent={Clusteriazation}
+                updateDataContent={data}
+              />
+            }
+          />
+          <Route
+            path="*"
+            element={
+              <Content
+                key="normalization"
+                HelperComponent={Normalization}
+                updateDataContent={normalizedData}
+              />
+            }
           />
         </Routes>
       </div>

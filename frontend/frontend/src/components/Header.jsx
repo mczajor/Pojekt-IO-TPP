@@ -9,7 +9,7 @@ export default function Header() {
 
   return (
     <header>
-      <Link to="/dane">
+      <Link to="">
         <button className={currentClicked === 0 ? "clicked-btn" : undefined} onClick={() => setCurrentClicked(0)}>Dane</button>
       </Link>
       <Link to="/normalizacja">
