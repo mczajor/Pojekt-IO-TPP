@@ -2,7 +2,8 @@ from enum import Enum, auto
 from pathlib import Path
 from tkinter import Tk
 from tkinter import filedialog
-from typing import Optional, Dict, Any, List, Type
+from typing import Optional, Dict, Any, List, Type, Union
+from copy import deepcopy
 
 import eel
 import numpy as np
@@ -47,10 +48,23 @@ class ClusterizationMethodType(Enum):
 
 class DataService(Singleton):
     _data: Optional[Data] = None
+    _normalized_data: Optional[Data] = None
+    _file_name: str = ""
 
     @classmethod
     def data(cls) -> Optional[Data]:
         return cls._data
+
+    @classmethod
+    def file_name(cls) -> Optional[str]:
+        return cls._file_name
+
+    @classmethod
+    def normalized_data(cls) -> Optional[Data]:
+        return cls._normalized_data
+    @classmethod
+    def set_normalized_data(cls) -> None:
+        cls._normalized_data = deepcopy(cls._data)
 
     @classmethod
     def load(cls, data_path: Path|str) -> Data:
@@ -115,11 +129,12 @@ class DataService(Singleton):
     def modify_value_at(cls, row: str|int, column_name: str, new_value: Any) -> None:
         cls._data.at[row, column_name] = new_value
 
-    @staticmethod
-    def get_file_path() -> str:
+    @classmethod
+    def get_file_path(cls) -> str:
         root: Tk = Tk()
         root.filename = filedialog.askopenfilename(initialdir="/", title="Select file", filetypes=[("CSV files", "*.csv")])
         root.destroy()
+        cls._file_name = root.filename
         return root.filename
 
     @classmethod
@@ -132,7 +147,7 @@ class DataService(Singleton):
             case _:
                 raise ValueError('Invalid numerical normalization type value.')
 
-        cls._data[columns] = scaler.fit_transform(cls._data[columns])
+        cls._normalized_data[columns] = scaler.fit_transform(cls._data[columns])
 
     @classmethod
     def normalize_categorical(cls, columns: List[str], method: CategoricalNormalizationType = CategoricalNormalizationType.LABEL) -> None:
@@ -145,17 +160,18 @@ class DataService(Singleton):
                 raise ValueError('Invalid categorical normalization type value.')
 
         for column in columns:
-            cls._data[column] = encoder.fit_transform(cls._data[column])
+            cls._normalized_data[column] = encoder.fit_transform(cls._data[column])
 
     @classmethod
     def normalize(cls, columns: Optional[List[str]] = None,
                   numerical_method: NumericalNormalizationType = NumericalNormalizationType.MIN_MAX,
                   categorical_method: CategoricalNormalizationType = CategoricalNormalizationType.LABEL) -> None:
+        DataService.set_normalized_data()
         if columns is None:
-            columns = cls._data.columns
+            columns = cls.normalized_data().columns
 
-        numerical_columns: List[pd.Index] = cls._data.select_dtypes(include=[np.number]).columns.tolist()
-        categorical_columns: List[pd.Index] = cls._data.select_dtypes(include=[np.object]).columns.tolist()
+        numerical_columns: List[pd.Index] = cls._normalized_data.select_dtypes(include=[np.number]).columns.tolist()
+        categorical_columns: List[pd.Index] = cls._normalized_data.select_dtypes(include=[object]).columns.tolist()    ## Dla wersji poniżej 1.23.5 np.object
 
         numerical_to_normalize: List[str] = list(set(columns) & set(numerical_columns))
         categorical_to_normalize: List[str] = list(set(columns) & set(categorical_columns))
@@ -166,16 +182,19 @@ class DataService(Singleton):
             cls.normalize_categorical(categorical_to_normalize, categorical_method)
 
     @classmethod
-    def clusterize(cls, columns: List[str], clusterizationMethod: ClusterizationMethodType, *args, **kwargs) -> np.ndarray:
+    def clusterize(cls, columns: List[str], clusterizationMethod: ClusterizationMethodType, cluster_count: int = 3, *args, **kwargs) -> \
+    dict[str, Union[list, Any]]:
+        if columns is None:
+            columns = cls._data.columns
         match clusterizationMethod:
             case ClusterizationMethodType.K_MEANS:
-                clusters = cls.clusterize_k_means(columns, *args, **kwargs)
+                clusters = cls.clusterize_k_means(columns, cluster_count, *args, **kwargs)
             case ClusterizationMethodType.DBSCAN:
                 clusters = cls.clusterize_density(columns, *args, **kwargs)
             case ClusterizationMethodType.AGGLOMERATIVE:
-                clusters = cls.clusterize_agglomerative(columns, *args, **kwargs)
+                clusters = cls.clusterize_agglomerative(columns, cluster_count, *args, **kwargs)
             case ClusterizationMethodType.GAUSSIAN:
-                clusters = cls.clusterize_gaussian_mixture(columns, *args, **kwargs)
+                clusters = cls.clusterize_gaussian_mixture(columns, cluster_count, *args, **kwargs)
             case ClusterizationMethodType.AFFINITY:
                 clusters = cls.clusterize_affinity_propagation(columns, *args, **kwargs)
             case ClusterizationMethodType.MEAN_SHIFT:
@@ -183,7 +202,11 @@ class DataService(Singleton):
             case _:
                 raise ValueError('Invalid clusterization method type value.')
 
-        return clusters
+        data = {
+            "clusters": clusters.tolist()
+        }
+
+        return data
 
     @classmethod
     def clusterize_k_means(cls, columns: List[str], cluster_count: int = 8) -> np.ndarray:
@@ -240,14 +263,19 @@ def _check_if_valid_enum(value: str|int, enum: Type[Enum]) -> Enum:
 def DataService_data() -> Optional[str]:
     return DataService.data().to_json()
 
-
 @eel.expose
 def DataService_load() -> str:
     data_path = DataService.get_file_path()
     DataService.load(data_path).to_json()
+    DataService.set_normalized_data()
     return data_path
+@eel.expose
+def DataService_file_name() -> Optional[str]:
+    return DataService.file_name()
 
-
+@eel.expose
+def DataService_normalized_data() -> Optional[str]:
+    return DataService.normalized_data().to_json()
 @eel.expose
 def DataService_save(data_path: Optional[str] = None) -> None:
     DataService.save(data_path)
@@ -256,41 +284,49 @@ def DataService_save(data_path: Optional[str] = None) -> None:
 @eel.expose
 def DataService_modify(edit_type: str|int, *args, **kwargs) -> None:
     DataService.modify(_check_if_valid_enum(edit_type, DataEditOperationType), *args, **kwargs)
+    DataService.set_normalized_data()
 
 
 @eel.expose
 def DataService_add_rows(rows: Dict[str, Any]) -> None:
     DataService.add_rows(rows)
+    DataService.set_normalized_data()
 
 
 @eel.expose
 def DataService_remove_rows(rows: List[int|str]|int|str) -> None:
     DataService.remove_rows(rows)
+    DataService.set_normalized_data()
 
 
 @eel.expose
 def DataService_add_columns(columns: Dict[str, Any]) -> None:
     DataService.add_columns(columns)
+    DataService.set_normalized_data()
 
 
 @eel.expose
 def DataService_remove_columns(columns: List[str]|str) -> None:
     DataService.remove_columns(columns)
+    DataService.set_normalized_data()
 
 
 @eel.expose
 def DataService_rename_row(row: int|str, new_name: str) -> None:
     DataService.rename_row(row, new_name)
+    DataService.set_normalized_data()
 
 
 @eel.expose
 def DataService_rename_column(old_name: str, new_name: str) -> None:
     DataService.rename_column(old_name, new_name)
+    DataService.set_normalized_data()
 
 
 @eel.expose
 def DataService_modify_value_at(row: str|int, column_name: str, new_value: Any) -> None:
     DataService.modify_value_at(row, column_name, new_value)
+    DataService.set_normalized_data()
 
 
 @eel.expose
@@ -323,7 +359,7 @@ def DataService_normalize(columns: Optional[List[str]] = None, numerical_method_
 
 
 @eel.expose
-def DataService_clusterize(columns: List[str], clusterization_method_type: str|int, *args, **kwargs) -> np.ndarray:
+def DataService_clusterize(columns: List[str], clusterization_method_type: str|int, *args, **kwargs) -> dict[str, Union[list, Any]]:
     clusterization_method: ClusterizationMethodType = _check_if_valid_enum(clusterization_method_type, ClusterizationMethodType)
     return DataService.clusterize(columns, clusterization_method, *args, **kwargs)
 

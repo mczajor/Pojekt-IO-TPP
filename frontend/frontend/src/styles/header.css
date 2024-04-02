@@ -4,7 +4,6 @@ header {
     height: 5vh;
     width: 80%;
     border: 2px solid gray;
-    border-bottom: none;
   }
   
   header button {
@@ -23,4 +22,17 @@ header {
   
   #right-first-btn {
     border-right: none;
+  }
+
+  header button:hover {
+    background-color: rgb(193, 212, 238); 
+  }
+  
+  header button:focus {
+    outline: none;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.5); 
+  }
+  
+.clicked-btn {
+    background-color: rgb(168, 199, 240); 
   }

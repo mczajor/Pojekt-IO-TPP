@@ -1,43 +1,57 @@
-import io
+
 from pathlib import Path
+from typing import Any, Union
 
 import eel
-import matplotlib.pyplot as plt
+
 import numpy as np
 import pandas as pd
+
+
 from pandas import DataFrame as Data
 from sklearn.decomposition import PCA
 
 from backend.singleton import Singleton
+
+from backend.data_service import DataService
 
 
 class VisualizationService(Singleton):
     _default_save_path: Path = Path.home()
 
     @classmethod
-    def visualize_pca(cls, data: Data, component_count: int = 2) -> io.BytesIO:
+    def visualize_pca(cls, data: Data, component_count: int = 2) -> dict[str, Union[list, Any]]:
         pca: PCA = PCA(n_components=component_count) # Wybierz liczbę komponentów głównych
 
         principal_components: np.ndarray = pca.fit_transform(data) # Dopasowanie modelu do danych
         result_dataframe: pd.DataFrame = pd.DataFrame(data=principal_components, columns=['PC1', 'PC2']) # Utwórz DataFrame z wynikami PCA
         merged_dataframe = pd.concat([data, result_dataframe], axis=1) # Połącz wyniki PCA z oryginalnymi danymi
 
-        # Wykres punktowy 2D dla dwóch pierwszych komponentów głównych
-        plt.scatter(merged_dataframe['PC1'], merged_dataframe['PC2'])
-        plt.title('PCA - Principal Component Analysis')
-        plt.xlabel('Principal Component 1')
-        plt.ylabel('Principal Component 2')
+        pca_components_df = pd.DataFrame(pca.components_, columns=data.columns)
 
-        # Zapisz wykres jako bajty w pamięci
-        img_bytes: io.BytesIO = io.BytesIO()
-        plt.savefig(img_bytes, format='png')
-        img_bytes.seek(0)
+        column_vector = pca_components_df.columns.tolist()
+        eigenvector_1 = pca_components_df.values[0]
+        eigenvector_2 = pca_components_df.values[1]
 
-        plt.clf() # Wyczyść obecny wykres, aby nie wyświetlał się na ekranie
+        eigenvector_1_rounded = [round(num, 6) for num in eigenvector_1]
+        eigenvector_2_rounded = [round(num, 6) for num in eigenvector_2]
 
-        return img_bytes
+        x = merged_dataframe['PC1'].values
+        y = merged_dataframe['PC2'].values
+
+        data = {
+            "column_vector": column_vector,
+            "eigenvector_1": eigenvector_1_rounded,  # Konwertowanie na listę, jeśli to jest numpy array
+            "eigenvector_2": eigenvector_2_rounded,  # Konwertowanie na listę, jeśli to jest numpy array
+            "x": x.tolist(),
+            "y": y.tolist()
+        }
+
+        return data
 
 
 @eel.expose
-def VisualizationService_visualize_pca(data: Data, component_count: int = 2) -> io.BytesIO:
+def VisualizationService_visualize_pca(component_count: int = 2) -> dict[str, Union[list, Any]]:
+    data = DataService.normalized_data()
+
     return VisualizationService.visualize_pca(data, component_count)

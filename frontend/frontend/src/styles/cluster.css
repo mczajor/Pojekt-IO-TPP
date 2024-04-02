@@ -1,0 +1,43 @@
+#cluster-input {
+    margin-left: 2rem;
+    width: 4rem;
+    text-align: center;
+  }
+
+  .input-clusterization-container {
+    display: flex;
+    align-items: center;
+  }
+
+  #clusterize-buttons-container{
+    display: flex;
+    margin-top: 1rem;
+    margin-left: 1.5rem;
+    justify-content: center;
+    flex-direction: column;
+  }
+
+  #clusterize-btn{
+    margin-top: 0;
+    margin-left: 4rem;
+  }
+
+  #clusterize-options{
+    display: flex;
+  }
+
+  #h2-cluster{
+    margin-left: 5rem;
+  }
+
+  #clusterize-btn-container{
+    margin-left: 0;
+  }
+  
+  .plot-container {
+    margin-top: 1rem;
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+  }

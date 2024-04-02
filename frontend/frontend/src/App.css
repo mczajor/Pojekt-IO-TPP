@@ -1,0 +1,45 @@
+.normalize-cont {
+    display: flex;
+    align-items: center;
+}
+
+.class-input {
+    margin: 4rem;
+}
+
+select {
+    margin-left: 1rem;
+    margin-top: 7px;
+    padding: 8px 12px;
+    font-size: 16px;
+    border: 1px solid #ccc; 
+    border-radius: 4px; 
+    background-color: #fff; 
+  }
+  
+
+  select option {
+    padding: 8px 12px; 
+  }
+  
+  
+  select:hover {
+    border-color: #999; 
+  }
+  
+ 
+  select:focus {
+    outline: none; 
+    border-color: #333; 
+    box-shadow: 0 0 0 2px rgba(51, 51, 51, 0.2); 
+  }
+
+  .analize-btn{
+    min-width: 7rem;
+    margin-top: 3rem;
+  }
+
+  .buttons-container{
+    margin-top: 1.5rem;
+    margin-left: 5rem;
+  }
