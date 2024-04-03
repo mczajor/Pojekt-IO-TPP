@@ -11,7 +11,7 @@ import "../styles/data_view.css";
 import "../styles/change_data.css";
 import AddFile from "./AddFile.jsx";
 
-export default function Content({ HelperComponent, updateDataContent, setNormalized }) {
+export default function Content({ HelperComponent, updateDataContent, setNormalized, normalized }) {
   const [selectedFileName, setSelectedFileName] = useState(undefined);
   const [fileContent, setFileContent] = useState([]);
   const [editMode, setEditMode] = useState(false);
@@ -112,7 +112,7 @@ export default function Content({ HelperComponent, updateDataContent, setNormali
   }
 
   function changeValue() {
-    modifyValueAt(+selectedBackendRowIndex, selectedColumnName, +newValue); //konwerujemy na int
+    modifyValueAt(+selectedBackendRowIndex, selectedColumnName, newValue); //konwerujemy na int
     updateDataContent(updateFileContent_callback);
     setNewValue("");
   }
@@ -229,6 +229,7 @@ export default function Content({ HelperComponent, updateDataContent, setNormali
             setColumnsSet={setColumnsSet}
             updateDataContent={updateDataContent}
             setNormalized = {setNormalized}
+            normalized = {normalized}
           />
         </div>
       </>

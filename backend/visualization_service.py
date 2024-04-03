@@ -39,12 +39,15 @@ class VisualizationService(Singleton):
         x = merged_dataframe['PC1'].values
         y = merged_dataframe['PC2'].values
 
+        x_filtered = x[~np.isnan(x)]
+        y_filtered = y[~np.isnan(y)]
+
         data = {
             "column_vector": column_vector,
             "eigenvector_1": eigenvector_1_rounded,  # Konwertowanie na listę, jeśli to jest numpy array
             "eigenvector_2": eigenvector_2_rounded,  # Konwertowanie na listę, jeśli to jest numpy array
-            "x": x.tolist(),
-            "y": y.tolist()
+            "x": x_filtered.tolist(),
+            "y": y_filtered.tolist()
         }
 
         return data

@@ -13,6 +13,7 @@ export default function PCA({ normalized }) {
   });
 
   function vizualize_callback(response) {
+    console.log(response)
     let columnVector = ["Component", ...response["column_vector"]];
     let eigenvector_1 = ["Principal 1", ...response["eigenvector_1"]];
     let eigenvector_2 = ["Principal 2", ...response["eigenvector_2"]];

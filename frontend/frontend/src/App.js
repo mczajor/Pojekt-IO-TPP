@@ -47,7 +47,8 @@ function App() {
               <Content
                 key="clusterize"
                 HelperComponent={Clusteriazation}
-                updateDataContent={data}
+                updateDataContent={normalizedData}
+                normalized = {normalized}
               />
             }
           />

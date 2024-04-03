@@ -1,4 +1,6 @@
-import { saveToFile } from "./pythonConection";
+import { saveToFile, getColumnType, change_column_type } from "./pythonConection";
+import { columnTypes } from "../operations/columnTypes";
+import { useState } from "react";
 
 export default function EditPanel({
   editMode,
@@ -14,37 +16,75 @@ export default function EditPanel({
   deleteRow,
   setNormalized,
 }) {
+  const [currentType, setCurrentType] = useState(undefined);
+  const [changedType, setChangedType] = useState(0);
+
+  
+  function handleChangedType(event) {
+    setChangedType(+event.target.value);
+  }
+
+
   return (
     <>
       {editMode && (
         <>
           {selectedCurrentRowIndex === -1 && (
-            <div className="input-btn-container">
-              <input
-                type="text"
-                value={tempColumnName}
-                onChange={handleInputValues}
-                className="change-input"
-              />
-              <button
-                onClick={() => {
-                  confirmChanges();
-                  setNormalized(false);
-                }}
-                className="change-btn"
+            <>
+              {getColumnType(tempColumnName, setCurrentType)}
+              <div className="input-btn-container">
+                <input
+                  type="text"
+                  value={tempColumnName}
+                  onChange={handleInputValues}
+                  className="change-input"
+                />
+                <button
+                  onClick={() => {
+                    confirmChanges();
+                    setNormalized(false);
+                  }}
+                  className="change-btn"
+                >
+                  Zmień nazwę
+                </button>
+                <button
+                  onClick={() => {
+                    deleteColumn(tempColumnName);
+                    setNormalized(false);
+                  }}
+                  className="delete-btn"
+                >
+                  Usuń kolumnę
+                </button>
+              </div>
+
+              <div className="input-btn-container">
+              <h2 >Typ: {currentType}</h2>
+              <select
+                value={changedType}
+                onChange={handleChangedType}
               >
-                Zmień nazwę
-              </button>
+                {Object.entries(columnTypes).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+
               <button
-                onClick={() => {
-                  deleteColumn(tempColumnName);
-                  setNormalized(false);
-                }}
-                className="delete-btn"
-              >
-                Usuń kolumnę
-              </button>
+                  onClick={() => {
+                    change_column_type(tempColumnName, changedType);
+                    getColumnType(tempColumnName, setCurrentType);
+                    setNormalized(false)
+                  }}
+                  className="change-btn"
+                  id = "change-type-btn"
+                >
+                  Zmień typ
+                </button>
             </div>
+            </>
           )}
           {selectedCurrentRowIndex !== -1 && (
             <div className="input-btn-container">
