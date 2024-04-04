@@ -3,7 +3,13 @@ import { useState } from "react";
 import Plot from "react-plotly.js";
 import "../styles/pca.css";
 
-export default function PCA({ normalized }) {
+export default function PCA({
+  normalized,
+  columnsSet,
+  setColumnsSet,
+  addColumnsMode,
+  setAddColumnsMode,
+}) {
   const [data, setData] = useState({
     columnVector: [],
     eigenvector_1: [],
@@ -28,8 +34,9 @@ export default function PCA({ normalized }) {
     });
   }
 
-  if (data["x"].length === 0 && normalized) {
-    viualizeData(vizualize_callback);
+  function stopAdding() {
+    setColumnsSet(new Set());
+    setAddColumnsMode(false);
   }
 
   return (
@@ -39,8 +46,32 @@ export default function PCA({ normalized }) {
           <h1 id="pca-h1">Musisz najpierw znormalizować dane</h1>{" "}
         </>
       )}
+      {normalized && (
+        <div id="clusterize-btn-container" className="buttons-container">
+          <button
+            className={!addColumnsMode ? "change-btn" : "delete-btn"}
+            onClick={() => {
+              !addColumnsMode ? setAddColumnsMode(true) : stopAdding();
+            }}
+          >
+            {!addColumnsMode ? "Wybierz kolumny" : "Przerwij wybieranie"}
+          </button>
+
+          <button
+            id="clusterize-btn"
+            className="change-btn analize-btn"
+            onClick={() => {
+              viualizeData([...columnsSet], vizualize_callback);
+              setAddColumnsMode(false);
+              setColumnsSet(new Set());
+            }}
+          >
+            Wizualizuj
+          </button>
+        </div>
+      )}
       {data["x"].length > 0 && (
-        <>
+        <div id="pca-results-container">
           <div id="plot-pca-sticky">
             <Plot
               className="plot"
@@ -89,7 +120,7 @@ export default function PCA({ normalized }) {
               </tr>
             </tbody>
           </table>
-        </>
+        </div>
       )}
     </div>
   );

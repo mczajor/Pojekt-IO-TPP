@@ -26,6 +26,7 @@ function App() {
                 HelperComponent={EditPanel}
                 updateDataContent={data}
                 setNormalized = {setNormalized}
+                allData = {true}
               />
             }
           />
@@ -37,17 +38,27 @@ function App() {
                 HelperComponent={Normalization}
                 updateDataContent={normalizedData}
                 setNormalized = {setNormalized}
+                allData = {true}
               />
             }
           />
-          <Route path="pca" element={<PCA normalized = {normalized}/>} />
+          <Route path="pca" element={<Content
+                key="pca"
+                HelperComponent={PCA}
+                updateDataContent={normalizedData}
+                normalized = {normalized}
+                setNormalized = {setNormalized}
+                allData = {false}
+              />} />
           <Route
             path="klasteryzacja"
             element={
               <Content
                 key="clusterize"
                 HelperComponent={Clusteriazation}
-                updateDataContent={data}
+                updateDataContent={normalizedData}
+                normalized = {normalized}
+                allData = {false}
               />
             }
           />
@@ -58,6 +69,7 @@ function App() {
                 key="normalization"
                 HelperComponent={Normalization}
                 updateDataContent={normalizedData}
+                allData = {true}
               />
             }
           />

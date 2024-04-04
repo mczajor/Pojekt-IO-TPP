@@ -12,6 +12,7 @@ from pandas import DataFrame as Data
 from sklearn.cluster import KMeans, DBSCAN, AgglomerativeClustering, AffinityPropagation, MeanShift
 from sklearn.mixture import GaussianMixture
 from sklearn.preprocessing import StandardScaler, LabelEncoder, MinMaxScaler, OneHotEncoder
+from sklearn.metrics import silhouette_score
 
 from backend.file_service import FileService
 from backend.singleton import Singleton
@@ -65,6 +66,17 @@ class DataService(Singleton):
     @classmethod
     def set_normalized_data(cls) -> None:
         cls._normalized_data = deepcopy(cls._data)
+
+    @classmethod
+    def column_type(cls, column_name: str):
+        return cls._data[column_name].dtype
+
+    @classmethod
+    def change_column_type(cls, column_name: str, new_type: int) -> None:
+        if new_type == 0:
+            cls._data[column_name] = cls._data[column_name].astype('float64')
+        else:
+            cls._data[column_name] = cls._data[column_name].astype('str')
 
     @classmethod
     def load(cls, data_path: Path|str) -> Data:
@@ -127,6 +139,11 @@ class DataService(Singleton):
 
     @classmethod
     def modify_value_at(cls, row: str|int, column_name: str, new_value: Any) -> None:
+        _type = cls.column_type(column_name)
+        if _type == "object" or _type == "str":
+            new_value = str(new_value)
+        else:
+            new_value = float(new_value)
         cls._data.at[row, column_name] = new_value
 
     @classmethod
@@ -185,7 +202,7 @@ class DataService(Singleton):
     def clusterize(cls, columns: List[str], clusterizationMethod: ClusterizationMethodType, cluster_count: int = 3, *args, **kwargs) -> \
     dict[str, Union[list, Any]]:
         if columns is None:
-            columns = cls._data.columns
+            columns = cls._normalized_data.columns
         match clusterizationMethod:
             case ClusterizationMethodType.K_MEANS:
                 clusters = cls.clusterize_k_means(columns, cluster_count, *args, **kwargs)
@@ -211,37 +228,37 @@ class DataService(Singleton):
     @classmethod
     def clusterize_k_means(cls, columns: List[str], cluster_count: int = 8) -> np.ndarray:
         kmeans: KMeans = KMeans(n_clusters=cluster_count)
-        clusters: np.ndarray = kmeans.fit_predict(cls._data[columns])
+        clusters: np.ndarray = kmeans.fit_predict(cls._normalized_data[columns])
         return clusters
 
     @classmethod
     def clusterize_density(cls, columns: List[str], eps: float = 0.5, min_samples: int = 5) -> np.ndarray:
         dbscan: DBSCAN = DBSCAN(eps=eps, min_samples=min_samples)
-        clusters: np.ndarray = dbscan.fit_predict(cls._data[columns])
+        clusters: np.ndarray = dbscan.fit_predict(cls._normalized_data[columns])
         return clusters
 
     @classmethod
     def clusterize_agglomerative(cls, columns: List[str], cluster_count: int = 2) -> np.ndarray:
         agg_clustering: AgglomerativeClustering = AgglomerativeClustering(n_clusters=cluster_count)
-        clusters: np.ndarray = agg_clustering.fit_predict(cls._data[columns])
+        clusters: np.ndarray = agg_clustering.fit_predict(cls._normalized_data[columns])
         return clusters
 
     @classmethod
     def clusterize_gaussian_mixture(cls, columns: List[str], component_count: int = 1) -> np.ndarray:
         gmm: GaussianMixture = GaussianMixture(n_components=component_count)
-        clusters: np.ndarray = gmm.fit_predict(cls._data[columns])
+        clusters: np.ndarray = gmm.fit_predict(cls._normalized_data[columns])
         return clusters
 
     @classmethod
     def clusterize_affinity_propagation(cls, columns: List[str], damping: float = 0.5, iteration_count: int = 200) -> np.ndarray:
         affinity_prop: AffinityPropagation = AffinityPropagation(damping=damping, max_iter=iteration_count)
-        clusters: np.ndarray = affinity_prop.fit_predict(cls._data[columns])
+        clusters: np.ndarray = affinity_prop.fit_predict(cls._normalized_data[columns])
         return clusters
 
     @classmethod
     def clusterize_mean_shift(cls, columns: List[str], iteration_count: int = 300) -> np.ndarray:
         mean_shift: MeanShift = MeanShift(max_iter=iteration_count)
-        clusters: np.ndarray = mean_shift.fit_predict(cls._data[columns])
+        clusters: np.ndarray = mean_shift.fit_predict(cls._normalized_data[columns])
         return clusters
 
 
@@ -257,6 +274,35 @@ def _check_if_valid_enum(value: str|int, enum: Type[Enum]) -> Enum:
     except KeyError:
         raise ValueError(f'Invalid edit type value! String value must be a valid {enum.__name__} enum member.')
     return enum_value
+
+
+def choose_optimal_clusters(column_names, clusterization_method, min_clusters=2, max_clusters=100, *args, **kwargs):
+    data = DataService.normalized_data()
+
+    if column_names:
+        data = data.loc[:, column_names]
+    best_score = -1
+    best_num_clusters = -1
+
+    for num_clusters in range(min_clusters, max_clusters + 1):
+        cluster_labels = DataService.clusterize(column_names, clusterization_method, num_clusters, *args, **kwargs)["clusters"]
+
+        silhouette_avg = silhouette_score(data, cluster_labels)
+
+        if silhouette_avg > best_score:
+            best_score = silhouette_avg
+            best_num_clusters = num_clusters
+
+    result = {
+        "silhouette_avg": best_score,
+        "num_clusters": best_num_clusters,
+    }
+    return result
+
+@eel.expose
+def DataService_suggest_clusster_nb(column_names: List[str] = None, clusterization_method_type: str|int = 0, *args, **kwargs):
+    clusterization_method: ClusterizationMethodType = _check_if_valid_enum(clusterization_method_type, ClusterizationMethodType)
+    return choose_optimal_clusters(column_names, clusterization_method, *args, **kwargs)
 
 
 @eel.expose
@@ -279,7 +325,14 @@ def DataService_normalized_data() -> Optional[str]:
 @eel.expose
 def DataService_save(data_path: Optional[str] = None) -> None:
     DataService.save(data_path)
-
+@eel.expose
+def DataService_column_type(column_name: str) -> str:
+    _type = str(DataService.column_type(column_name))
+    return 'Kategoryczny' if _type in ['object', 'str'] else 'Numeryczny'
+@eel.expose
+def DataService_change_column_type(column_name: str, new_type: int) -> None:
+    DataService.change_column_type(column_name, new_type)
+    DataService.set_normalized_data()
 
 @eel.expose
 def DataService_modify(edit_type: str|int, *args, **kwargs) -> None:

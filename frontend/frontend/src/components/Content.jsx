@@ -11,7 +11,13 @@ import "../styles/data_view.css";
 import "../styles/change_data.css";
 import AddFile from "./AddFile.jsx";
 
-export default function Content({ HelperComponent, updateDataContent, setNormalized }) {
+export default function Content({
+  HelperComponent,
+  updateDataContent,
+  setNormalized,
+  normalized,
+  allData,
+}) {
   const [selectedFileName, setSelectedFileName] = useState(undefined);
   const [fileContent, setFileContent] = useState([]);
   const [editMode, setEditMode] = useState(false);
@@ -26,7 +32,7 @@ export default function Content({ HelperComponent, updateDataContent, setNormali
   const fileName = (filePath) => filePath.split("/").pop();
 
   function getFileName_callback(response) {
-    if (response !== ""){
+    if (response !== "") {
       updateDataContent(updateFileContent_callback);
       setSelectedFileName(fileName(response));
     }
@@ -53,7 +59,7 @@ export default function Content({ HelperComponent, updateDataContent, setNormali
       setColumnsSet((prevSet) => new Set(prevSet).add(columnName));
     }
   };
- 
+
   function updateFileContent_callback(dataString) {
     let data = JSON.parse(dataString);
     setFileContent(data);
@@ -65,10 +71,10 @@ export default function Content({ HelperComponent, updateDataContent, setNormali
     setAddColumnsMode(value);
   }
 
-  function changeName(currentValue) {
-    setEditMode(true);
-    setSelectedBackendRowIndex(-1);
-    setSelectedCurrentRowIndex(-1);
+  function changeName(currentValue, currentRow = -1, backendRow = -1, editMode = true) {
+    setEditMode(editMode);
+    setSelectedBackendRowIndex(backendRow);
+    setSelectedCurrentRowIndex(currentRow);
     setSelectedColumnName(currentValue);
     setTempColumnName(currentValue);
   }
@@ -102,9 +108,15 @@ export default function Content({ HelperComponent, updateDataContent, setNormali
   }
 
   function clickFrame(currentRow, backendRow, column) {
-    setSelectedBackendRowIndex(+backendRow);
-    setSelectedCurrentRowIndex(currentRow);
-    changeName(column);
+    if (
+      +currentRow === selectedCurrentRowIndex &&
+      +backendRow === selectedBackendRowIndex &&
+      column === selectedColumnName
+    ) {
+      changeName("", -1, -1, false)
+    } else {
+      changeName(column, +currentRow, +backendRow, true)
+    }
   }
 
   function handleNewValue(event) {
@@ -112,7 +124,7 @@ export default function Content({ HelperComponent, updateDataContent, setNormali
   }
 
   function changeValue() {
-    modifyValueAt(+selectedBackendRowIndex, selectedColumnName, +newValue); //konwerujemy na int
+    modifyValueAt(+selectedBackendRowIndex, selectedColumnName, newValue); //konwerujemy na int
     updateDataContent(updateFileContent_callback);
     setNewValue("");
   }
@@ -129,7 +141,7 @@ export default function Content({ HelperComponent, updateDataContent, setNormali
   if (selectedFileName !== undefined) {
     content = (
       <>
-        <div id="main-container">
+        <div id="main-container" style={{ height: allData ? "70vh" : "20vh" }}>
           <div id="file-name">
             <p>Wybrany plik: {selectedFileName}</p>
           </div>
@@ -145,7 +157,7 @@ export default function Content({ HelperComponent, updateDataContent, setNormali
                       key={column}
                       onClick={() =>
                         !addColumnsMode
-                          ? changeName(column)
+                          ? (selectedColumnName === column && selectedCurrentRowIndex === -1? changeName("", -1, -1, false) : changeName(column))
                           : handleToggleColumn(column)
                       }
                     >
@@ -160,12 +172,7 @@ export default function Content({ HelperComponent, updateDataContent, setNormali
                 ].map((_, rowIndex) => (
                   <tr
                     key={rowIndex}
-                    onClick={() => {
-                      setSelectedBackendRowIndex(
-                        +Object.keys(fileContent[columnNames[0]])[rowIndex]
-                      );
-                      setSelectedCurrentRowIndex(+rowIndex);
-                    }}
+                  
                   >
                     {columnNames.map((column) => (
                       <td
@@ -228,7 +235,8 @@ export default function Content({ HelperComponent, updateDataContent, setNormali
             addColumnsMode={addColumnsMode}
             setColumnsSet={setColumnsSet}
             updateDataContent={updateDataContent}
-            setNormalized = {setNormalized}
+            setNormalized={setNormalized}
+            normalized={normalized}
           />
         </div>
       </>

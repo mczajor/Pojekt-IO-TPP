@@ -44,15 +44,15 @@ export function normalize(
   );
 }
 
-export function normalizedData(updateFileContent_callback){
-  eel.DataService_normalized_data()(updateFileContent_callback)
+export function normalizedData(updateFileContent_callback) {
+  eel.DataService_normalized_data()(updateFileContent_callback);
 }
 
 export function clusterize(
   columns,
   clusterization_method_type,
   convertStrToArr,
-  selectedNbOfClusters = 2,
+  selectedNbOfClusters = 2
 ) {
   columns.length === 0
     ? eel.DataService_clusterize(
@@ -66,10 +66,34 @@ export function clusterize(
         selectedNbOfClusters
       )(convertStrToArr);
 }
-export async function viualizeData(vizualize_callback) {
-  await eel.VisualizationService_visualize_pca()(vizualize_callback);
+export async function viualizeData(columns, vizualize_callback) {
+  columns.length === 0
+    ? await eel.VisualizationService_visualize_pca()(vizualize_callback)
+    : await eel.VisualizationService_visualize_pca(columns)(vizualize_callback);
 }
 
-export function getFileName(fileName_callback){
-  eel.DataService_file_name()(fileName_callback)
+export function getFileName(fileName_callback) {
+  eel.DataService_file_name()(fileName_callback);
+}
+
+export function getColumnType(columnName, columnType_callback) {
+  eel.DataService_column_type(columnName)(columnType_callback);
+}
+
+export function change_column_type(columnName, newType) {
+  eel.DataService_change_column_type(columnName, newType);
+}
+
+export async function suggestClusterNb(columnNames, clusterization_method_type, setSilhouette) {
+  if (columnNames.length === 0) {
+    await eel.DataService_suggest_clusster_nb(
+      null,
+      clusterization_method_type
+    )(setSilhouette);
+  } else {
+    await eel.DataService_suggest_clusster_nb(
+      columnNames,
+      clusterization_method_type
+    )(setSilhouette);
+  }
 }
