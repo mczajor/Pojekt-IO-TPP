@@ -12,6 +12,7 @@ from pandas import DataFrame as Data
 from sklearn.cluster import KMeans, DBSCAN, AgglomerativeClustering, AffinityPropagation, MeanShift
 from sklearn.mixture import GaussianMixture
 from sklearn.preprocessing import StandardScaler, LabelEncoder, MinMaxScaler, OneHotEncoder
+from sklearn.metrics import silhouette_score
 
 from backend.file_service import FileService
 from backend.singleton import Singleton
@@ -273,6 +274,35 @@ def _check_if_valid_enum(value: str|int, enum: Type[Enum]) -> Enum:
     except KeyError:
         raise ValueError(f'Invalid edit type value! String value must be a valid {enum.__name__} enum member.')
     return enum_value
+
+
+def choose_optimal_clusters(column_names, clusterization_method, min_clusters=2, max_clusters=100, *args, **kwargs):
+    data = DataService.normalized_data()
+
+    if column_names:
+        data = data.loc[:, column_names]
+    best_score = -1
+    best_num_clusters = -1
+
+    for num_clusters in range(min_clusters, max_clusters + 1):
+        cluster_labels = DataService.clusterize(column_names, clusterization_method, num_clusters, *args, **kwargs)["clusters"]
+
+        silhouette_avg = silhouette_score(data, cluster_labels)
+
+        if silhouette_avg > best_score:
+            best_score = silhouette_avg
+            best_num_clusters = num_clusters
+
+    result = {
+        "silhouette_avg": best_score,
+        "num_clusters": best_num_clusters,
+    }
+    return result
+
+@eel.expose
+def DataService_suggest_clusster_nb(column_names: List[str] = None, clusterization_method_type: str|int = 0, *args, **kwargs):
+    clusterization_method: ClusterizationMethodType = _check_if_valid_enum(clusterization_method_type, ClusterizationMethodType)
+    return choose_optimal_clusters(column_names, clusterization_method, *args, **kwargs)
 
 
 @eel.expose

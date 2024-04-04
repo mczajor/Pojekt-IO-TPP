@@ -1,6 +1,6 @@
 
 from pathlib import Path
-from typing import Any, Union
+from typing import Any, Union, Optional, List
 
 import eel
 
@@ -54,7 +54,11 @@ class VisualizationService(Singleton):
 
 
 @eel.expose
-def VisualizationService_visualize_pca(component_count: int = 2) -> dict[str, Union[list, Any]]:
+def VisualizationService_visualize_pca(column_names: Optional[List[str]] = None, component_count: int = 2)\
+        -> dict[str, Union[list, Any]]:
     data = DataService.normalized_data()
+
+    if column_names:
+        data = data.loc[:, column_names]
 
     return VisualizationService.visualize_pca(data, component_count)
