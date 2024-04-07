@@ -17,6 +17,7 @@ from sklearn.preprocessing import StandardScaler, LabelEncoder, MinMaxScaler, On
 
 from backend.file_service import FileService
 from backend.singleton import Singleton
+from sklearn import metrics
 
 
 class DataEditOperationType(Enum):
@@ -27,6 +28,7 @@ class DataEditOperationType(Enum):
     RENAME_ROW = auto()
     RENAME_COLUMN = auto()
     MODIFY_VALUE = auto()
+    REMOVE_NAN = auto()
 
 
 class NumericalNormalizationType(Enum):
@@ -92,9 +94,7 @@ class DataService(Singleton):
             raise ValueError('No clusterization was made, clusterize first to save data with cluster ids!')
         elif with_clusters:
             data_with_cluster_id: Data = deepcopy(cls._data)
-            print(data_with_cluster_id)
             data_with_cluster_id['cluster_id'] = cls._last_clusters
-            print(data_with_cluster_id)
             FileService.save(data_with_cluster_id, data_path)
         else:
             FileService.save(cls._data, data_path)
@@ -116,6 +116,8 @@ class DataService(Singleton):
                 cls.rename_column(*args, **kwargs)
             case DataEditOperationType.MODIFY_VALUE:
                 cls.modify_value_at(*args, **kwargs)
+            case DataEditOperationType.REMOVE_NAN:
+                cls.remove_nan(*args, **kwargs)
             case _:
                 raise ValueError('Invalid edit type value.')
 
@@ -157,6 +159,10 @@ class DataService(Singleton):
         else:
             new_value = float(new_value)
         cls._data.at[row, column_name] = new_value
+
+    @classmethod
+    def remove_nan(cls) -> None:
+        cls._data = cls._data.dropna()
 
     @classmethod
     def get_file_path(cls) -> str:
@@ -423,6 +429,11 @@ def DataService_rename_column(old_name: str, new_name: str) -> None:
 @eel.expose
 def DataService_modify_value_at(row: str|int, column_name: str, new_value: Any) -> None:
     DataService.modify_value_at(row, column_name, new_value)
+    DataService.set_normalized_data()
+
+@eel.expose
+def DataService_remove_nan() -> None:
+    DataService.remove_nan()
     DataService.set_normalized_data()
 
 
