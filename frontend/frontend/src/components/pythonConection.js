@@ -86,12 +86,12 @@ export function change_column_type(columnName, newType) {
 
 export async function suggestClusterNb(columnNames, clusterization_method_type, setSilhouette) {
   if (columnNames.length === 0) {
-    await eel.DataService_suggest_clusster_nb(
+    await eel.DataService_suggest_cluster_nb(
       null,
       clusterization_method_type
     )(setSilhouette);
   } else {
-    await eel.DataService_suggest_clusster_nb(
+    await eel.DataService_suggest_cluster_nb(
       columnNames,
       clusterization_method_type
     )(setSilhouette);

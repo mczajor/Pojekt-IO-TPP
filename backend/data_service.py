@@ -63,6 +63,7 @@ class DataService(Singleton):
     @classmethod
     def normalized_data(cls) -> Optional[Data]:
         return cls._normalized_data
+
     @classmethod
     def set_normalized_data(cls) -> None:
         cls._normalized_data = deepcopy(cls._data)
@@ -183,9 +184,9 @@ class DataService(Singleton):
     def normalize(cls, columns: Optional[List[str]] = None,
                   numerical_method: NumericalNormalizationType = NumericalNormalizationType.MIN_MAX,
                   categorical_method: CategoricalNormalizationType = CategoricalNormalizationType.LABEL) -> None:
-        DataService.set_normalized_data()
+        cls.set_normalized_data()
         if columns is None:
-            columns = cls.normalized_data().columns
+            columns = cls._normalized_data.columns
 
         numerical_columns: List[pd.Index] = cls._normalized_data.select_dtypes(include=[np.number]).columns.tolist()
         categorical_columns: List[pd.Index] = cls._normalized_data.select_dtypes(include=[object]).columns.tolist()    ## Dla wersji poniżej 1.23.5 np.object
@@ -299,8 +300,9 @@ def choose_optimal_clusters(column_names, clusterization_method, min_clusters=2,
     }
     return result
 
+
 @eel.expose
-def DataService_suggest_clusster_nb(column_names: List[str] = None, clusterization_method_type: str|int = 0, *args, **kwargs):
+def DataService_suggest_cluster_nb(column_names: List[str] = None, clusterization_method_type: str|int = 0, *args, **kwargs):
     clusterization_method: ClusterizationMethodType = _check_if_valid_enum(clusterization_method_type, ClusterizationMethodType)
     return choose_optimal_clusters(column_names, clusterization_method, *args, **kwargs)
 
@@ -309,30 +311,41 @@ def DataService_suggest_clusster_nb(column_names: List[str] = None, clusterizati
 def DataService_data() -> Optional[str]:
     return DataService.data().to_json()
 
+
 @eel.expose
 def DataService_load() -> str:
     data_path = DataService.get_file_path()
     DataService.load(data_path).to_json()
     DataService.set_normalized_data()
     return data_path
+
+
 @eel.expose
 def DataService_file_name() -> Optional[str]:
     return DataService.file_name()
 
+
 @eel.expose
 def DataService_normalized_data() -> Optional[str]:
     return DataService.normalized_data().to_json()
+
+
 @eel.expose
 def DataService_save(data_path: Optional[str] = None) -> None:
     DataService.save(data_path)
+
+
 @eel.expose
 def DataService_column_type(column_name: str) -> str:
     _type = str(DataService.column_type(column_name))
     return 'Kategoryczny' if _type in ['object', 'str'] else 'Numeryczny'
+
+
 @eel.expose
 def DataService_change_column_type(column_name: str, new_type: int) -> None:
     DataService.change_column_type(column_name, new_type)
     DataService.set_normalized_data()
+
 
 @eel.expose
 def DataService_modify(edit_type: str|int, *args, **kwargs) -> None:
