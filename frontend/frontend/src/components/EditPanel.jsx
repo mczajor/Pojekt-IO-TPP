@@ -15,6 +15,7 @@ export default function EditPanel({
   selectedCurrentRowIndex,
   deleteRow,
   setNormalized,
+  handleAddFileClick
 }) {
   const [currentType, setCurrentType] = useState(undefined);
   const [changedType, setChangedType] = useState(0);
@@ -23,7 +24,6 @@ export default function EditPanel({
   function handleChangedType(event) {
     setChangedType(+event.target.value);
   }
-
 
   return (
     <>
@@ -127,8 +127,8 @@ export default function EditPanel({
       )}
 
       <div className="input-btn-container">
-        <button onClick={saveToFile} className="selected-row" id="save-btn">
-          Zapisz
+        <button onClick={handleAddFileClick} className="selected-row" id="save-btn">
+          Zmień plik
         </button>
       </div>
     </>

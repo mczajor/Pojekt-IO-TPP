@@ -86,6 +86,7 @@ class DataService(Singleton):
     @classmethod
     def set_normalized_data(cls) -> None:
         cls._normalized_data = deepcopy(cls._data)
+        cls._last_clusters = None
 
     @classmethod
     def column_type(cls, column_name: str):
@@ -259,6 +260,16 @@ class DataService(Singleton):
         return data
 
     @classmethod
+    def get_clusters(cls) -> Dict[str, List[Any]]:
+        result = None
+        if cls._last_clusters is not None:
+            result = cls._last_clusters.tolist()
+        data = {
+            "clusters": result
+        }
+        return data
+
+    @classmethod
     @notnull(message="Clusterization can not be made with cells containing null values. Remove or fill them first!")
     def clusterize_k_means(cls, columns: List[str], cluster_count: int = 8) -> np.ndarray:
         kmeans: KMeans = KMeans(n_clusters=cluster_count)
@@ -347,11 +358,12 @@ class DataService(Singleton):
 
         cluster_statistics: Dict[int, Dict] = {}
         for cluster_id in unique_cluster_ids:
+            cluster_id = int(cluster_id)
             cluster_data: Data = data[data['cluster_id'] == cluster_id]
-            mean_values: float = cluster_data.mean()
-            expected_value: float = cluster_data.sum() / len(cluster_data)
-            variance_values: float = cluster_data.var()
-            std_deviation_values: float = cluster_data.std()
+            mean_values = dict(zip(cluster_data.columns, cluster_data.mean()))
+            expected_value = dict(zip(cluster_data.columns, cluster_data.sum() / len(cluster_data)))
+            variance_values = dict(zip(cluster_data.columns, cluster_data.var()))
+            std_deviation_values = dict(zip(cluster_data.columns, cluster_data.std()))
             cluster_size: int = len(cluster_data)
 
             cluster_statistics[cluster_id] = {
@@ -367,9 +379,10 @@ class DataService(Singleton):
     @classmethod
     def get_data_with_cluster_statistics(cls) -> Data:
         data: Data = deepcopy(cls._data)
-        data['cluster_id'] = cls._last_clusters
-        cluster_metrics: Dict = cls.get_cluster_metrics()
-        data['record_metric'] = cluster_metrics['Intra-cluster Silhouette index']
+        if cls._last_clusters is not None:
+            data['cluster_id'] = cls._last_clusters
+            cluster_metrics: Dict = cls.get_cluster_metrics()
+            data['record_metric'] = cluster_metrics['Intra-cluster Silhouette index']
 
         return data
 
@@ -635,9 +648,9 @@ def DataService_clusterize_mean_shift(columns: List[str], iteration_count: int =
 
 
 @eel.expose
-def DataService_get_cluster_tendency_score(sample_size: int = 0.1) -> float:
+def DataService_get_cluster_tendency_score(sample_size: int = 0.1) -> str:
     try:
-        return DataService.get_cluster_tendency_score(sample_size)
+        return str(DataService.get_cluster_tendency_score(sample_size))
     except NullValuesError as e:
         print("ERROR:", e)
         return ErrorCode.NULL_VALUES_ERROR
@@ -659,3 +672,7 @@ def DataService_get_each_cluster_statistics() -> Dict[int, Dict]:
 @eel.expose
 def DataService_get_data_with_cluster_statistics() -> str:
     return DataService.get_data_with_cluster_statistics().to_json()
+
+@eel.expose
+def DataService_get_clusters()-> Dict[str, List[Any]]:
+    return DataService.get_clusters()

@@ -6,6 +6,7 @@ export function print_python_response(dataString) {
 }
 
 export async function data(updateFileContent_callback) {
+  console.log("data")
   await eel.DataService_data()(updateFileContent_callback);
 }
 
@@ -25,8 +26,8 @@ export function modifyValueAt(rowIndex, columnName, newValue) {
   eel.DataService_modify_value_at(rowIndex, columnName, newValue);
 }
 
-export function saveToFile() {
-  eel.DataService_save();
+export function saveToFile(withClusters) {
+  eel.DataService_save(null, withClusters);
 }
 
 export function loadFile(setFileName) {
@@ -45,6 +46,7 @@ export function normalize(
 }
 
 export function normalizedData(updateFileContent_callback) {
+  console.log("normalized")
   eel.DataService_normalized_data()(updateFileContent_callback);
 }
 
@@ -96,4 +98,24 @@ export async function suggestClusterNb(columnNames, clusterization_method_type, 
       clusterization_method_type
     )(setSilhouette);
   }
+}
+
+export function getClusterMetrics(clusterMetrics_callback){
+  eel.DataService_get_cluster_metrics()(clusterMetrics_callback);
+}
+
+export function getEachClusterStatistics(eachClusterStatistics_callback){
+  eel.DataService_get_each_cluster_statistics()(eachClusterStatistics_callback);
+}
+
+export function getDataWithClusterStatistics(updateFileContent_callback) {
+    eel.DataService_get_data_with_cluster_statistics()(updateFileContent_callback)
+  }
+
+export function getClusters(setClusters){
+  eel.DataService_get_clusters()(setClusters)
+}
+
+export function getClusterTendencyScore(setClusterTendencyScore){
+  eel.DataService_get_cluster_tendency_score()(setClusterTendencyScore)
 }

@@ -1,13 +1,5 @@
-import { loadFile } from "./pythonConection";
-
-export default function AddFile({updateDataContent, updateFileContent_callback, fileName, setSelectedFileName}) {
-  async function handleAddFileClick() {
-    loadFile((filePath) => {
-      setSelectedFileName(fileName(filePath));
-    });
-
-    updateDataContent(updateFileContent_callback);
-  }
+export default function AddFile({handleAddFileClick}) {
+  
 
   return (
     <div id="main-container" style={{ overflow: "hidden" }}>
