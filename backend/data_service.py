@@ -51,6 +51,7 @@ class DataService(Singleton):
     _data: Optional[Data] = None
     _normalized_data: Optional[Data] = None
     _file_name: str = ""
+    _last_clusters: Optional[np.ndarray] = None
 
     @classmethod
     def data(cls) -> Optional[Data]:
@@ -87,6 +88,10 @@ class DataService(Singleton):
     @classmethod
     def save(cls, data_path: Optional[Path|str] = None) -> None:
         FileService.save(cls._data, data_path)
+
+    @classmethod
+    def save_last_clusters(cls, path: Path|str) -> None:
+        FileService.save
 
     @classmethod
     def modify(cls, edit_type: DataEditOperationType, *args, **kwargs) -> None:
@@ -200,8 +205,7 @@ class DataService(Singleton):
             cls.normalize_categorical(categorical_to_normalize, categorical_method)
 
     @classmethod
-    def clusterize(cls, columns: List[str], clusterizationMethod: ClusterizationMethodType, cluster_count: int = 3, *args, **kwargs) -> \
-    dict[str, Union[list, Any]]:
+    def clusterize(cls, columns: List[str], clusterizationMethod: ClusterizationMethodType, cluster_count: int = 3, *args, **kwargs) -> Dict[str, List[Any]]:
         if columns is None:
             columns = cls._normalized_data.columns
         match clusterizationMethod:
@@ -220,6 +224,7 @@ class DataService(Singleton):
             case _:
                 raise ValueError('Invalid clusterization method type value.')
 
+        cls._last_clusters = clusters
         data = {
             "clusters": clusters.tolist()
         }
