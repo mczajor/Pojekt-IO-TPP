@@ -15,6 +15,7 @@ from sklearn.mixture import GaussianMixture
 from sklearn.neighbors import NearestNeighbors
 from sklearn.preprocessing import StandardScaler, LabelEncoder, MinMaxScaler, OneHotEncoder
 
+from backend.errors import NullValuesError, ErrorCode
 from backend.file_service import FileService
 from backend.singleton import Singleton
 from sklearn import metrics
@@ -50,6 +51,16 @@ class ClusterizationMethodType(Enum):
     MEAN_SHIFT = auto()
 
 
+def notnull(message: str):
+    def decorator(func):
+        def wrapper(cls, *args, **kwargs):
+            if cls._contains_null_values():
+                raise NullValuesError(message)
+            return func(cls, *args, **kwargs)
+        return wrapper
+    return decorator
+
+
 class DataService(Singleton):
     _data: Optional[Data] = None
     _normalized_data: Optional[Data] = None
@@ -59,6 +70,10 @@ class DataService(Singleton):
     @classmethod
     def data(cls) -> Optional[Data]:
         return cls._data
+
+    @classmethod
+    def last_clusters(cls) -> Optional[List[str]]:
+        return cls._last_clusters
 
     @classmethod
     def file_name(cls) -> Optional[str]:
@@ -244,51 +259,60 @@ class DataService(Singleton):
         return data
 
     @classmethod
+    @notnull(message="Clusterization can not be made with cells containing null values. Remove or fill them first!")
     def clusterize_k_means(cls, columns: List[str], cluster_count: int = 8) -> np.ndarray:
         kmeans: KMeans = KMeans(n_clusters=cluster_count)
         clusters: np.ndarray = kmeans.fit_predict(cls._normalized_data[columns])
         return clusters
 
     @classmethod
+    @notnull(message="Clusterization can not be made with cells containing null values. Remove or fill them first!")
     def clusterize_density(cls, columns: List[str], eps: float = 0.5, min_samples: int = 5) -> np.ndarray:
         dbscan: DBSCAN = DBSCAN(eps=eps, min_samples=min_samples)
         clusters: np.ndarray = dbscan.fit_predict(cls._normalized_data[columns])
         return clusters
 
     @classmethod
+    @notnull(message="Clusterization can not be made with cells containing null values. Remove or fill them first!")
     def clusterize_agglomerative(cls, columns: List[str], cluster_count: int = 2) -> np.ndarray:
         agg_clustering: AgglomerativeClustering = AgglomerativeClustering(n_clusters=cluster_count)
         clusters: np.ndarray = agg_clustering.fit_predict(cls._normalized_data[columns])
         return clusters
 
     @classmethod
+    @notnull(message="Clusterization can not be made with cells containing null values. Remove or fill them first!")
     def clusterize_gaussian_mixture(cls, columns: List[str], component_count: int = 1) -> np.ndarray:
         gmm: GaussianMixture = GaussianMixture(n_components=component_count)
         clusters: np.ndarray = gmm.fit_predict(cls._normalized_data[columns])
         return clusters
 
     @classmethod
+    @notnull(message="Clusterization can not be made with cells containing null values. Remove or fill them first!")
     def clusterize_affinity_propagation(cls, columns: List[str], damping: float = 0.5, iteration_count: int = 200) -> np.ndarray:
         affinity_prop: AffinityPropagation = AffinityPropagation(damping=damping, max_iter=iteration_count)
         clusters: np.ndarray = affinity_prop.fit_predict(cls._normalized_data[columns])
         return clusters
 
     @classmethod
+    @notnull(message="Clusterization can not be made with cells containing null values. Remove or fill them first!")
     def clusterize_mean_shift(cls, columns: List[str], iteration_count: int = 300) -> np.ndarray:
         mean_shift: MeanShift = MeanShift(max_iter=iteration_count)
         clusters: np.ndarray = mean_shift.fit_predict(cls._normalized_data[columns])
         return clusters
 
     @classmethod
+    @notnull(message="Cluster tendency score can not be calculated with cells containing null values. Remove or fill them first!")
     def get_cluster_tendency_score(cls, sample_size: int = 0.1) -> float:
-        data: Data = cls._data.dropna()
-        rows, dimensions = data.shape
+        if cls._contains_null_values():
+            raise NullValuesError()
+
+        rows, dimensions = cls._data.shape
         m = int(sample_size * rows)
 
-        neighbours: NearestNeighbors = NearestNeighbors(n_neighbors=2).fit(data.to_numpy())
+        neighbours: NearestNeighbors = NearestNeighbors(n_neighbors=2).fit(cls._data.to_numpy())
 
-        data_sample = data.sample(n=m, replace=False).to_numpy()
-        y_sample = np.random.uniform(data.min(axis=0), data.max(axis=0), size=(m, dimensions))
+        data_sample = cls._data.sample(n=m, replace=False).to_numpy()
+        y_sample = np.random.uniform(cls._data.min(axis=0), cls._data.max(axis=0), size=(m, dimensions))
 
         w_distances, _ = neighbours.kneighbors(data_sample, return_distance=True)
         w_distances = w_distances[:, 1]
@@ -307,6 +331,10 @@ class DataService(Singleton):
             "Calinski-Harabasz index": metrics.calinski_harabasz_score(cls._data, cls._last_clusters),
             "Intra-cluster Silhouette index": metrics.silhouette_samples(cls._data, cls._last_clusters),
         }
+
+    @classmethod
+    def _contains_null_values(cls) -> bool:
+        return len(cls._data) != len(deepcopy(cls._data).dropna())
 
 
 def _check_if_valid_enum(value: str|int, enum: Type[Enum]) -> Enum:
@@ -356,6 +384,11 @@ def DataService_suggest_cluster_nb(column_names: List[str] = None, clusterizatio
 @eel.expose
 def DataService_data() -> Optional[str]:
     return DataService.data().to_json()
+
+
+@eel.expose
+def DataService_last_clusters() -> Optional[List[str]]:
+    return DataService.last_clusters()
 
 
 @eel.expose
@@ -476,44 +509,100 @@ def DataService_normalize(columns: Optional[List[str]] = None, numerical_method_
 
 
 @eel.expose
-def DataService_clusterize(columns: List[str], clusterization_method_type: str|int, *args, **kwargs) -> dict[str, Union[list, Any]]:
+def DataService_clusterize(columns: List[str], clusterization_method_type: str|int, *args, **kwargs) -> Dict[str, List[Any]]|int:
     clusterization_method: ClusterizationMethodType = _check_if_valid_enum(clusterization_method_type, ClusterizationMethodType)
-    return DataService.clusterize(columns, clusterization_method, *args, **kwargs)
+    try:
+        return DataService.clusterize(columns, clusterization_method, *args, **kwargs)
+    except NullValuesError as e:
+        print("ERROR:", e)
+        return ErrorCode.NULL_VALUES_ERROR
+    except Exception as e:
+        print("ERROR:", e)
+        return ErrorCode.LIBRARY_ERROR
 
 
 @eel.expose
 def DataService_clusterize_k_means(columns: List[str], cluster_count: int = 8) -> np.ndarray:
-    return DataService.clusterize_k_means(columns, cluster_count)
+    try:
+        return DataService.clusterize_k_means(columns, cluster_count)
+    except NullValuesError as e:
+        print("ERROR:", e)
+        return ErrorCode.NULL_VALUES_ERROR
+    except Exception as e:
+        print("ERROR:", e)
+        return ErrorCode.LIBRARY_ERROR
 
 
 @eel.expose
 def DataService_clusterize_density(columns: List[str], eps: float = 0.5, min_samples: int = 5) -> np.ndarray:
-    return DataService.clusterize_density(columns, eps, min_samples)
+    try:
+        return DataService.clusterize_density(columns, eps, min_samples)
+    except NullValuesError as e:
+        print("ERROR:", e)
+        return ErrorCode.NULL_VALUES_ERROR
+    except Exception as e:
+        print("ERROR:", e)
+        return ErrorCode.LIBRARY_ERROR
 
 
 @eel.expose
 def DataService_clusterize_agglomerative(columns: List[str], cluster_count: int = 2) -> np.ndarray:
-    return DataService.clusterize_agglomerative(columns, cluster_count)
+    try:
+        return DataService.clusterize_agglomerative(columns, cluster_count)
+    except NullValuesError as e:
+        print("ERROR:", e)
+        return ErrorCode.NULL_VALUES_ERROR
+    except Exception as e:
+        print("ERROR:", e)
+        return ErrorCode.LIBRARY_ERROR
 
 
 @eel.expose
 def DataService_clusterize_gaussian_mixture(columns: List[str], component_count: int = 1) -> np.ndarray:
-    return DataService.clusterize_gaussian_mixture(columns, component_count)
+    try:
+        return DataService.clusterize_gaussian_mixture(columns, component_count)
+    except NullValuesError as e:
+        print("ERROR:", e)
+        return ErrorCode.NULL_VALUES_ERROR
+    except Exception as e:
+        print("ERROR:", e)
+        return ErrorCode.LIBRARY_ERROR
 
 
 @eel.expose
 def DataService_clusterize_affinity_propagation(columns: List[str], damping: float = 0.5, iteration_count: int = 200) -> np.ndarray:
-    return DataService.clusterize_affinity_propagation(columns, damping, iteration_count)
+    try:
+        return DataService.clusterize_affinity_propagation(columns, damping, iteration_count)
+    except NullValuesError as e:
+        print("ERROR:", e)
+        return ErrorCode.NULL_VALUES_ERROR
+    except Exception as e:
+        print("ERROR:", e)
+        return ErrorCode.LIBRARY_ERROR
 
 
 @eel.expose
 def DataService_clusterize_mean_shift(columns: List[str], iteration_count: int = 300) -> np.ndarray:
-    return DataService.clusterize_mean_shift(columns, iteration_count)
+    try:
+        return DataService.clusterize_mean_shift(columns, iteration_count)
+    except NullValuesError as e:
+        print("ERROR:", e)
+        return ErrorCode.NULL_VALUES_ERROR
+    except Exception as e:
+        print("ERROR:", e)
+        return ErrorCode.LIBRARY_ERROR
 
 
 @eel.expose
 def DataService_get_cluster_tendency_score(sample_size: int = 0.1) -> float:
-    return DataService.get_cluster_tendency_score(sample_size)
+    try:
+        return DataService.get_cluster_tendency_score(sample_size)
+    except NullValuesError as e:
+        print("ERROR:", e)
+        return ErrorCode.NULL_VALUES_ERROR
+    except Exception as e:
+        print("ERROR:", e)
+        return ErrorCode.LIBRARY_ERROR
 
 
 @eel.expose
