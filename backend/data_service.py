@@ -1,18 +1,19 @@
+from copy import deepcopy
 from enum import Enum, auto
 from pathlib import Path
 from tkinter import Tk
 from tkinter import filedialog
 from typing import Optional, Dict, Any, List, Type, Union
-from copy import deepcopy
 
 import eel
 import numpy as np
 import pandas as pd
 from pandas import DataFrame as Data
 from sklearn.cluster import KMeans, DBSCAN, AgglomerativeClustering, AffinityPropagation, MeanShift
-from sklearn.mixture import GaussianMixture
-from sklearn.preprocessing import StandardScaler, LabelEncoder, MinMaxScaler, OneHotEncoder
 from sklearn.metrics import silhouette_score
+from sklearn.mixture import GaussianMixture
+from sklearn.neighbors import NearestNeighbors
+from sklearn.preprocessing import StandardScaler, LabelEncoder, MinMaxScaler, OneHotEncoder
 
 from backend.file_service import FileService
 from backend.singleton import Singleton
@@ -272,6 +273,26 @@ class DataService(Singleton):
         clusters: np.ndarray = mean_shift.fit_predict(cls._normalized_data[columns])
         return clusters
 
+    @classmethod
+    def get_cluster_tendency_score(cls, sample_size: int = 0.1) -> float:
+        data: Data = cls._data.dropna()
+        rows, dimensions = data.shape
+        m = int(sample_size * rows)
+
+        neighbours: NearestNeighbors = NearestNeighbors(n_neighbors=2).fit(data.to_numpy())
+
+        data_sample = data.sample(n=m, replace=False).to_numpy()
+        y_sample = np.random.uniform(data.min(axis=0), data.max(axis=0), size=(m, dimensions))
+
+        w_distances, _ = neighbours.kneighbors(data_sample, return_distance=True)
+        w_distances = w_distances[:, 1]
+
+        u_distances, _ = neighbours.kneighbors(y_sample, n_neighbors=1, return_distance=True)
+
+        w_sum = (w_distances ** dimensions).sum()
+        u_sum = (u_distances ** dimensions).sum()
+        return u_sum / (u_sum + w_sum)
+
 
 def _check_if_valid_enum(value: str|int, enum: Type[Enum]) -> Enum:
     if isinstance(value, int):
@@ -468,3 +489,8 @@ def DataService_clusterize_affinity_propagation(columns: List[str], damping: flo
 @eel.expose
 def DataService_clusterize_mean_shift(columns: List[str], iteration_count: int = 300) -> np.ndarray:
     return DataService.clusterize_mean_shift(columns, iteration_count)
+
+
+@eel.expose
+def DataService_get_cluster_tendency_score(sample_size: int = 0.1) -> float:
+    return DataService.get_cluster_tendency_score(sample_size)
