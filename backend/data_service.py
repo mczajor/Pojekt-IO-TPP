@@ -86,12 +86,17 @@ class DataService(Singleton):
         return cls._data
 
     @classmethod
-    def save(cls, data_path: Optional[Path|str] = None) -> None:
-        FileService.save(cls._data, data_path)
-
-    @classmethod
-    def save_last_clusters(cls, path: Path|str) -> None:
-        FileService.save
+    def save(cls, data_path: Optional[Path|str] = None, with_clusters: bool = False) -> None:
+        if with_clusters and cls._last_clusters is None:
+            raise ValueError('No clusterization was made, clusterize first to save data with cluster ids!')
+        elif with_clusters:
+            data_with_cluster_id: Data = deepcopy(cls._data)
+            print(data_with_cluster_id)
+            data_with_cluster_id['cluster_id'] = cls._last_clusters
+            print(data_with_cluster_id)
+            FileService.save(data_with_cluster_id, data_path)
+        else:
+            FileService.save(cls._data, data_path)
 
     @classmethod
     def modify(cls, edit_type: DataEditOperationType, *args, **kwargs) -> None:
@@ -319,7 +324,7 @@ def DataService_data() -> Optional[str]:
 
 @eel.expose
 def DataService_load() -> str:
-    data_path = DataService.get_file_path()
+    data_path = "./input-data.csv" #DataService.get_file_path()
     DataService.load(data_path).to_json()
     DataService.set_normalized_data()
     return data_path
@@ -336,8 +341,8 @@ def DataService_normalized_data() -> Optional[str]:
 
 
 @eel.expose
-def DataService_save(data_path: Optional[str] = None) -> None:
-    DataService.save(data_path)
+def DataService_save(data_path: Optional[str] = None, with_clusters: bool = False) -> None:
+    DataService.save(data_path, with_clusters)
 
 
 @eel.expose
