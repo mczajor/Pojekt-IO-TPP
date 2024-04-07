@@ -299,6 +299,15 @@ class DataService(Singleton):
         u_sum = (u_distances ** dimensions).sum()
         return u_sum / (u_sum + w_sum)
 
+    @classmethod
+    def get_cluster_metrics(cls) -> Dict[str, Any]:
+        return {
+            "Silhoutte Coefficient": metrics.silhouette_score(cls._data, cls._last_clusters),
+            "Davies-Bouldin index": metrics.davies_bouldin_score(cls._data, cls._last_clusters),
+            "Calinski-Harabasz index": metrics.calinski_harabasz_score(cls._data, cls._last_clusters),
+            "Intra-cluster Silhouette index": metrics.silhouette_samples(cls._data, cls._last_clusters),
+        }
+
 
 def _check_if_valid_enum(value: str|int, enum: Type[Enum]) -> Enum:
     if isinstance(value, int):
@@ -505,3 +514,8 @@ def DataService_clusterize_mean_shift(columns: List[str], iteration_count: int =
 @eel.expose
 def DataService_get_cluster_tendency_score(sample_size: int = 0.1) -> float:
     return DataService.get_cluster_tendency_score(sample_size)
+
+
+@eel.expose
+def DataService_get_cluster_metrics() -> Dict[str, Any]:
+    return DataService.get_cluster_metrics()
