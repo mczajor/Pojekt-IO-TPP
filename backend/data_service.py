@@ -306,13 +306,15 @@ class DataService(Singleton):
         if cls._contains_null_values():
             raise NullValuesError()
 
-        rows, dimensions = cls._data.shape
+        numeric_columns = cls._data.select_dtypes(include=['number']).columns
+        data: Data = cls._data[numeric_columns]
+        rows, dimensions = data.shape
         m = int(sample_size * rows)
 
-        neighbours: NearestNeighbors = NearestNeighbors(n_neighbors=2).fit(cls._data.to_numpy())
+        neighbours: NearestNeighbors = NearestNeighbors(n_neighbors=2).fit(data.to_numpy())
 
-        data_sample = cls._data.sample(n=m, replace=False).to_numpy()
-        y_sample = np.random.uniform(cls._data.min(axis=0), cls._data.max(axis=0), size=(m, dimensions))
+        data_sample = data.sample(n=m, replace=False).to_numpy()
+        y_sample = np.random.uniform(data.min(axis=0), data.max(axis=0), size=(m, dimensions))
 
         w_distances, _ = neighbours.kneighbors(data_sample, return_distance=True)
         w_distances = w_distances[:, 1]
@@ -325,12 +327,51 @@ class DataService(Singleton):
 
     @classmethod
     def get_cluster_metrics(cls) -> Dict[str, Any]:
+        numeric_columns = cls._data.select_dtypes(include=['number']).columns
+        data: Data = cls._data[numeric_columns]
+
         return {
-            "Silhoutte Coefficient": metrics.silhouette_score(cls._data, cls._last_clusters),
-            "Davies-Bouldin index": metrics.davies_bouldin_score(cls._data, cls._last_clusters),
-            "Calinski-Harabasz index": metrics.calinski_harabasz_score(cls._data, cls._last_clusters),
-            "Intra-cluster Silhouette index": metrics.silhouette_samples(cls._data, cls._last_clusters),
+            "Silhoutte Coefficient": metrics.silhouette_score(data, cls._last_clusters),
+            "Davies-Bouldin index": metrics.davies_bouldin_score(data, cls._last_clusters),
+            "Calinski-Harabasz index": metrics.calinski_harabasz_score(data, cls._last_clusters),
+            "Intra-cluster Silhouette index": list(metrics.silhouette_samples(data, cls._last_clusters)),
         }
+
+    @classmethod
+    def get_each_cluster_statistics(cls) -> Dict[int, Dict]:
+        numeric_columns = cls._data.select_dtypes(include=['number']).columns
+        data: Data = cls._data[numeric_columns]
+        data['cluster_id'] = cls._last_clusters
+
+        unique_cluster_ids: List[int] = data['cluster_id'].unique()
+
+        cluster_statistics: Dict[int, Dict] = {}
+        for cluster_id in unique_cluster_ids:
+            cluster_data: Data = data[data['cluster_id'] == cluster_id]
+            mean_values: float = cluster_data.mean()
+            expected_value: float = cluster_data.sum() / len(cluster_data)
+            variance_values: float = cluster_data.var()
+            std_deviation_values: float = cluster_data.std()
+            cluster_size: int = len(cluster_data)
+
+            cluster_statistics[cluster_id] = {
+                'Mean': mean_values,
+                'Expected Value': expected_value,
+                'Variance': variance_values,
+                'Standard Deviation': std_deviation_values,
+                'Cluster Size': cluster_size
+            }
+
+        return cluster_statistics
+
+    @classmethod
+    def get_data_with_cluster_statistics(cls) -> Data:
+        data: Data = deepcopy(cls._data)
+        data['cluster_id'] = cls._last_clusters
+        cluster_metrics: Dict = cls.get_cluster_metrics()
+        data['record_metric'] = cluster_metrics['Intra-cluster Silhouette index']
+
+        return data
 
     @classmethod
     def _contains_null_values(cls) -> bool:
@@ -393,7 +434,7 @@ def DataService_last_clusters() -> Optional[List[str]]:
 
 @eel.expose
 def DataService_load() -> str:
-    data_path = "./input-data.csv" #DataService.get_file_path()
+    data_path = DataService.get_file_path()
     DataService.load(data_path).to_json()
     DataService.set_normalized_data()
     return data_path
@@ -608,3 +649,13 @@ def DataService_get_cluster_tendency_score(sample_size: int = 0.1) -> float:
 @eel.expose
 def DataService_get_cluster_metrics() -> Dict[str, Any]:
     return DataService.get_cluster_metrics()
+
+
+@eel.expose
+def DataService_get_each_cluster_statistics() -> Dict[int, Dict]:
+    return DataService.get_each_cluster_statistics()
+
+
+@eel.expose
+def DataService_get_data_with_cluster_statistics() -> str:
+    return DataService.get_data_with_cluster_statistics().to_json()
