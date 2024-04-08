@@ -7,7 +7,7 @@ import EditPanel from "./components/EditPanel.jsx";
 import Normalization from "./components/Normalization.jsx";
 import Clusteriazation from "./components/Clusterization.jsx";
 import PCA from "./components/PCA.jsx";
-import { data, normalizedData } from "./components/pythonConection.js";
+import { data, normalizedData, getDataWithClusterStatistics } from "./components/pythonConection.js";
 
 function App() {
 
@@ -51,18 +51,6 @@ function App() {
                 allData = {false}
               />} />
           <Route
-            path="klasteryzacja"
-            element={
-              <Content
-                key="clusterize"
-                HelperComponent={Clusteriazation}
-                updateDataContent={normalizedData}
-                normalized = {normalized}
-                allData = {false}
-              />
-            }
-          />
-          <Route
             path="*"
             element={
               <Content
@@ -70,6 +58,18 @@ function App() {
                 HelperComponent={Normalization}
                 updateDataContent={normalizedData}
                 allData = {true}
+              />
+            }
+          />
+          <Route
+            path="klasteryzacja"
+            element={
+              <Content
+                key="clusterize"
+                HelperComponent={Clusteriazation}
+                updateDataContent={getDataWithClusterStatistics}
+                normalized = {normalized}
+                allData = {false}
               />
             }
           />

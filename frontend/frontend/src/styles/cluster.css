@@ -50,3 +50,7 @@
   .highlight {
     font-weight: bold;
   }
+
+  #each-cluster-statistic-container{
+    overflow-x: scroll;
+  }

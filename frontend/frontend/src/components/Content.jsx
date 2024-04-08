@@ -6,6 +6,7 @@ import {
   removeRow,
   modifyValueAt,
   getFileName,
+  loadFile
 } from "./pythonConection.js";
 import "../styles/data_view.css";
 import "../styles/change_data.css";
@@ -129,12 +130,17 @@ export default function Content({
     setNewValue("");
   }
 
+  async function handleAddFileClick() {
+    loadFile((filePath) => {
+      setSelectedFileName(fileName(filePath));
+    });
+
+    updateDataContent(updateFileContent_callback);
+  }
+
   let content = (
     <AddFile
-      updateDataContent={updateDataContent}
-      updateFileContent_callback={updateFileContent_callback}
-      fileName={fileName}
-      setSelectedFileName={setSelectedFileName}
+    handleAddFileClick = {handleAddFileClick}
     />
   );
 
@@ -237,6 +243,7 @@ export default function Content({
             updateDataContent={updateDataContent}
             setNormalized={setNormalized}
             normalized={normalized}
+            handleAddFileClick = {handleAddFileClick}
           />
         </div>
       </>

@@ -1,21 +1,24 @@
+from copy import deepcopy
 from enum import Enum, auto
 from pathlib import Path
 from tkinter import Tk
 from tkinter import filedialog
 from typing import Optional, Dict, Any, List, Type, Union
-from copy import deepcopy
 
 import eel
 import numpy as np
 import pandas as pd
 from pandas import DataFrame as Data
 from sklearn.cluster import KMeans, DBSCAN, AgglomerativeClustering, AffinityPropagation, MeanShift
-from sklearn.mixture import GaussianMixture
-from sklearn.preprocessing import StandardScaler, LabelEncoder, MinMaxScaler, OneHotEncoder
 from sklearn.metrics import silhouette_score
+from sklearn.mixture import GaussianMixture
+from sklearn.neighbors import NearestNeighbors
+from sklearn.preprocessing import StandardScaler, LabelEncoder, MinMaxScaler, OneHotEncoder
 
+from backend.errors import NullValuesError, ErrorCode
 from backend.file_service import FileService
 from backend.singleton import Singleton
+from sklearn import metrics
 
 
 class DataEditOperationType(Enum):
@@ -26,6 +29,7 @@ class DataEditOperationType(Enum):
     RENAME_ROW = auto()
     RENAME_COLUMN = auto()
     MODIFY_VALUE = auto()
+    REMOVE_NAN = auto()
 
 
 class NumericalNormalizationType(Enum):
@@ -47,14 +51,29 @@ class ClusterizationMethodType(Enum):
     MEAN_SHIFT = auto()
 
 
+def notnull(message: str):
+    def decorator(func):
+        def wrapper(cls, *args, **kwargs):
+            if cls._contains_null_values():
+                raise NullValuesError(message)
+            return func(cls, *args, **kwargs)
+        return wrapper
+    return decorator
+
+
 class DataService(Singleton):
     _data: Optional[Data] = None
     _normalized_data: Optional[Data] = None
     _file_name: str = ""
+    _last_clusters: Optional[np.ndarray] = None
 
     @classmethod
     def data(cls) -> Optional[Data]:
         return cls._data
+
+    @classmethod
+    def last_clusters(cls) -> Optional[List[str]]:
+        return cls._last_clusters
 
     @classmethod
     def file_name(cls) -> Optional[str]:
@@ -67,6 +86,7 @@ class DataService(Singleton):
     @classmethod
     def set_normalized_data(cls) -> None:
         cls._normalized_data = deepcopy(cls._data)
+        cls._last_clusters = None
 
     @classmethod
     def column_type(cls, column_name: str):
@@ -85,8 +105,15 @@ class DataService(Singleton):
         return cls._data
 
     @classmethod
-    def save(cls, data_path: Optional[Path|str] = None) -> None:
-        FileService.save(cls._data, data_path)
+    def save(cls, data_path: Optional[Path|str] = None, with_clusters: bool = False) -> None:
+        if with_clusters and cls._last_clusters is None:
+            raise ValueError('No clusterization was made, clusterize first to save data with cluster ids!')
+        elif with_clusters:
+            data_with_cluster_id: Data = deepcopy(cls._data)
+            data_with_cluster_id['cluster_id'] = cls._last_clusters
+            FileService.save(data_with_cluster_id, data_path)
+        else:
+            FileService.save(cls._data, data_path)
 
     @classmethod
     def modify(cls, edit_type: DataEditOperationType, *args, **kwargs) -> None:
@@ -105,6 +132,8 @@ class DataService(Singleton):
                 cls.rename_column(*args, **kwargs)
             case DataEditOperationType.MODIFY_VALUE:
                 cls.modify_value_at(*args, **kwargs)
+            case DataEditOperationType.REMOVE_NAN:
+                cls.remove_nan(*args, **kwargs)
             case _:
                 raise ValueError('Invalid edit type value.')
 
@@ -146,6 +175,10 @@ class DataService(Singleton):
         else:
             new_value = float(new_value)
         cls._data.at[row, column_name] = new_value
+
+    @classmethod
+    def remove_nan(cls) -> None:
+        cls._data = cls._data.dropna()
 
     @classmethod
     def get_file_path(cls) -> str:
@@ -200,8 +233,7 @@ class DataService(Singleton):
             cls.normalize_categorical(categorical_to_normalize, categorical_method)
 
     @classmethod
-    def clusterize(cls, columns: List[str], clusterizationMethod: ClusterizationMethodType, cluster_count: int = 3, *args, **kwargs) -> \
-    dict[str, Union[list, Any]]:
+    def clusterize(cls, columns: List[str], clusterizationMethod: ClusterizationMethodType, cluster_count: int = 3, *args, **kwargs) -> Dict[str, List[Any]]:
         if columns is None:
             columns = cls._normalized_data.columns
         match clusterizationMethod:
@@ -220,6 +252,7 @@ class DataService(Singleton):
             case _:
                 raise ValueError('Invalid clusterization method type value.')
 
+        cls._last_clusters = clusters
         data = {
             "clusters": clusters.tolist()
         }
@@ -227,40 +260,135 @@ class DataService(Singleton):
         return data
 
     @classmethod
+    def get_clusters(cls) -> Dict[str, List[Any]]:
+        result = None
+        if cls._last_clusters is not None:
+            result = cls._last_clusters.tolist()
+        data = {
+            "clusters": result
+        }
+        return data
+
+    @classmethod
+    @notnull(message="Clusterization can not be made with cells containing null values. Remove or fill them first!")
     def clusterize_k_means(cls, columns: List[str], cluster_count: int = 8) -> np.ndarray:
         kmeans: KMeans = KMeans(n_clusters=cluster_count)
         clusters: np.ndarray = kmeans.fit_predict(cls._normalized_data[columns])
         return clusters
 
     @classmethod
+    @notnull(message="Clusterization can not be made with cells containing null values. Remove or fill them first!")
     def clusterize_density(cls, columns: List[str], eps: float = 0.5, min_samples: int = 5) -> np.ndarray:
         dbscan: DBSCAN = DBSCAN(eps=eps, min_samples=min_samples)
         clusters: np.ndarray = dbscan.fit_predict(cls._normalized_data[columns])
         return clusters
 
     @classmethod
+    @notnull(message="Clusterization can not be made with cells containing null values. Remove or fill them first!")
     def clusterize_agglomerative(cls, columns: List[str], cluster_count: int = 2) -> np.ndarray:
         agg_clustering: AgglomerativeClustering = AgglomerativeClustering(n_clusters=cluster_count)
         clusters: np.ndarray = agg_clustering.fit_predict(cls._normalized_data[columns])
         return clusters
 
     @classmethod
+    @notnull(message="Clusterization can not be made with cells containing null values. Remove or fill them first!")
     def clusterize_gaussian_mixture(cls, columns: List[str], component_count: int = 1) -> np.ndarray:
         gmm: GaussianMixture = GaussianMixture(n_components=component_count)
         clusters: np.ndarray = gmm.fit_predict(cls._normalized_data[columns])
         return clusters
 
     @classmethod
+    @notnull(message="Clusterization can not be made with cells containing null values. Remove or fill them first!")
     def clusterize_affinity_propagation(cls, columns: List[str], damping: float = 0.5, iteration_count: int = 200) -> np.ndarray:
         affinity_prop: AffinityPropagation = AffinityPropagation(damping=damping, max_iter=iteration_count)
         clusters: np.ndarray = affinity_prop.fit_predict(cls._normalized_data[columns])
         return clusters
 
     @classmethod
+    @notnull(message="Clusterization can not be made with cells containing null values. Remove or fill them first!")
     def clusterize_mean_shift(cls, columns: List[str], iteration_count: int = 300) -> np.ndarray:
         mean_shift: MeanShift = MeanShift(max_iter=iteration_count)
         clusters: np.ndarray = mean_shift.fit_predict(cls._normalized_data[columns])
         return clusters
+
+    @classmethod
+    @notnull(message="Cluster tendency score can not be calculated with cells containing null values. Remove or fill them first!")
+    def get_cluster_tendency_score(cls, sample_size: int = 0.1) -> float:
+        if cls._contains_null_values():
+            raise NullValuesError()
+
+        numeric_columns = cls._data.select_dtypes(include=['number']).columns
+        data: Data = cls._data[numeric_columns]
+        rows, dimensions = data.shape
+        m = int(sample_size * rows)
+
+        neighbours: NearestNeighbors = NearestNeighbors(n_neighbors=2).fit(data.to_numpy())
+
+        data_sample = data.sample(n=m, replace=False).to_numpy()
+        y_sample = np.random.uniform(data.min(axis=0), data.max(axis=0), size=(m, dimensions))
+
+        w_distances, _ = neighbours.kneighbors(data_sample, return_distance=True)
+        w_distances = w_distances[:, 1]
+
+        u_distances, _ = neighbours.kneighbors(y_sample, n_neighbors=1, return_distance=True)
+
+        w_sum = (w_distances ** dimensions).sum()
+        u_sum = (u_distances ** dimensions).sum()
+        return u_sum / (u_sum + w_sum)
+
+    @classmethod
+    def get_cluster_metrics(cls) -> Dict[str, Any]:
+        numeric_columns = cls._data.select_dtypes(include=['number']).columns
+        data: Data = cls._data[numeric_columns]
+
+        return {
+            "Silhoutte Coefficient": metrics.silhouette_score(data, cls._last_clusters),
+            "Davies-Bouldin index": metrics.davies_bouldin_score(data, cls._last_clusters),
+            "Calinski-Harabasz index": metrics.calinski_harabasz_score(data, cls._last_clusters),
+            "Intra-cluster Silhouette index": list(metrics.silhouette_samples(data, cls._last_clusters)),
+        }
+
+    @classmethod
+    def get_each_cluster_statistics(cls) -> Dict[int, Dict]:
+        numeric_columns = cls._data.select_dtypes(include=['number']).columns
+        data: Data = cls._data[numeric_columns]
+        data['cluster_id'] = cls._last_clusters
+
+        unique_cluster_ids: List[int] = data['cluster_id'].unique()
+
+        cluster_statistics: Dict[int, Dict] = {}
+        for cluster_id in unique_cluster_ids:
+            cluster_id = int(cluster_id)
+            cluster_data: Data = data[data['cluster_id'] == cluster_id]
+            mean_values = dict(zip(cluster_data.columns, cluster_data.mean()))
+            expected_value = dict(zip(cluster_data.columns, cluster_data.sum() / len(cluster_data)))
+            variance_values = dict(zip(cluster_data.columns, cluster_data.var()))
+            std_deviation_values = dict(zip(cluster_data.columns, cluster_data.std()))
+            cluster_size: int = len(cluster_data)
+
+            cluster_statistics[cluster_id] = {
+                'Mean': mean_values,
+                'Expected Value': expected_value,
+                'Variance': variance_values,
+                'Standard Deviation': std_deviation_values,
+                'Cluster Size': cluster_size
+            }
+
+        return cluster_statistics
+
+    @classmethod
+    def get_data_with_cluster_statistics(cls) -> Data:
+        data: Data = deepcopy(cls._data)
+        if cls._last_clusters is not None:
+            data['cluster_id'] = cls._last_clusters
+            cluster_metrics: Dict = cls.get_cluster_metrics()
+            data['record_metric'] = cluster_metrics['Intra-cluster Silhouette index']
+
+        return data
+
+    @classmethod
+    def _contains_null_values(cls) -> bool:
+        return len(cls._data) != len(deepcopy(cls._data).dropna())
 
 
 def _check_if_valid_enum(value: str|int, enum: Type[Enum]) -> Enum:
@@ -313,6 +441,11 @@ def DataService_data() -> Optional[str]:
 
 
 @eel.expose
+def DataService_last_clusters() -> Optional[List[str]]:
+    return DataService.last_clusters()
+
+
+@eel.expose
 def DataService_load() -> str:
     data_path = DataService.get_file_path()
     DataService.load(data_path).to_json()
@@ -331,8 +464,8 @@ def DataService_normalized_data() -> Optional[str]:
 
 
 @eel.expose
-def DataService_save(data_path: Optional[str] = None) -> None:
-    DataService.save(data_path)
+def DataService_save(data_path: Optional[str] = None, with_clusters: bool = False) -> None:
+    DataService.save(data_path, with_clusters)
 
 
 @eel.expose
@@ -394,6 +527,11 @@ def DataService_modify_value_at(row: str|int, column_name: str, new_value: Any) 
     DataService.modify_value_at(row, column_name, new_value)
     DataService.set_normalized_data()
 
+@eel.expose
+def DataService_remove_nan() -> None:
+    DataService.remove_nan()
+    DataService.set_normalized_data()
+
 
 @eel.expose
 def DataService_normalize_numerical(columns: List[str], method_type: str|int = None) -> None:
@@ -425,36 +563,116 @@ def DataService_normalize(columns: Optional[List[str]] = None, numerical_method_
 
 
 @eel.expose
-def DataService_clusterize(columns: List[str], clusterization_method_type: str|int, *args, **kwargs) -> dict[str, Union[list, Any]]:
+def DataService_clusterize(columns: List[str], clusterization_method_type: str|int, *args, **kwargs) -> Dict[str, List[Any]]|int:
     clusterization_method: ClusterizationMethodType = _check_if_valid_enum(clusterization_method_type, ClusterizationMethodType)
-    return DataService.clusterize(columns, clusterization_method, *args, **kwargs)
+    try:
+        return DataService.clusterize(columns, clusterization_method, *args, **kwargs)
+    except NullValuesError as e:
+        print("ERROR:", e)
+        return ErrorCode.NULL_VALUES_ERROR
+    except Exception as e:
+        print("ERROR:", e)
+        return ErrorCode.LIBRARY_ERROR
 
 
 @eel.expose
 def DataService_clusterize_k_means(columns: List[str], cluster_count: int = 8) -> np.ndarray:
-    return DataService.clusterize_k_means(columns, cluster_count)
+    try:
+        return DataService.clusterize_k_means(columns, cluster_count)
+    except NullValuesError as e:
+        print("ERROR:", e)
+        return ErrorCode.NULL_VALUES_ERROR
+    except Exception as e:
+        print("ERROR:", e)
+        return ErrorCode.LIBRARY_ERROR
 
 
 @eel.expose
 def DataService_clusterize_density(columns: List[str], eps: float = 0.5, min_samples: int = 5) -> np.ndarray:
-    return DataService.clusterize_density(columns, eps, min_samples)
+    try:
+        return DataService.clusterize_density(columns, eps, min_samples)
+    except NullValuesError as e:
+        print("ERROR:", e)
+        return ErrorCode.NULL_VALUES_ERROR
+    except Exception as e:
+        print("ERROR:", e)
+        return ErrorCode.LIBRARY_ERROR
 
 
 @eel.expose
 def DataService_clusterize_agglomerative(columns: List[str], cluster_count: int = 2) -> np.ndarray:
-    return DataService.clusterize_agglomerative(columns, cluster_count)
+    try:
+        return DataService.clusterize_agglomerative(columns, cluster_count)
+    except NullValuesError as e:
+        print("ERROR:", e)
+        return ErrorCode.NULL_VALUES_ERROR
+    except Exception as e:
+        print("ERROR:", e)
+        return ErrorCode.LIBRARY_ERROR
 
 
 @eel.expose
 def DataService_clusterize_gaussian_mixture(columns: List[str], component_count: int = 1) -> np.ndarray:
-    return DataService.clusterize_gaussian_mixture(columns, component_count)
+    try:
+        return DataService.clusterize_gaussian_mixture(columns, component_count)
+    except NullValuesError as e:
+        print("ERROR:", e)
+        return ErrorCode.NULL_VALUES_ERROR
+    except Exception as e:
+        print("ERROR:", e)
+        return ErrorCode.LIBRARY_ERROR
 
 
 @eel.expose
 def DataService_clusterize_affinity_propagation(columns: List[str], damping: float = 0.5, iteration_count: int = 200) -> np.ndarray:
-    return DataService.clusterize_affinity_propagation(columns, damping, iteration_count)
+    try:
+        return DataService.clusterize_affinity_propagation(columns, damping, iteration_count)
+    except NullValuesError as e:
+        print("ERROR:", e)
+        return ErrorCode.NULL_VALUES_ERROR
+    except Exception as e:
+        print("ERROR:", e)
+        return ErrorCode.LIBRARY_ERROR
 
 
 @eel.expose
 def DataService_clusterize_mean_shift(columns: List[str], iteration_count: int = 300) -> np.ndarray:
-    return DataService.clusterize_mean_shift(columns, iteration_count)
+    try:
+        return DataService.clusterize_mean_shift(columns, iteration_count)
+    except NullValuesError as e:
+        print("ERROR:", e)
+        return ErrorCode.NULL_VALUES_ERROR
+    except Exception as e:
+        print("ERROR:", e)
+        return ErrorCode.LIBRARY_ERROR
+
+
+@eel.expose
+def DataService_get_cluster_tendency_score(sample_size: int = 0.1) -> str:
+    try:
+        return str(DataService.get_cluster_tendency_score(sample_size))
+    except NullValuesError as e:
+        print("ERROR:", e)
+        return ErrorCode.NULL_VALUES_ERROR
+    except Exception as e:
+        print("ERROR:", e)
+        return ErrorCode.LIBRARY_ERROR
+
+
+@eel.expose
+def DataService_get_cluster_metrics() -> Dict[str, Any]:
+    return DataService.get_cluster_metrics()
+
+
+@eel.expose
+def DataService_get_each_cluster_statistics() -> Dict[int, Dict]:
+    return DataService.get_each_cluster_statistics()
+
+
+@eel.expose
+def DataService_get_data_with_cluster_statistics() -> str:
+    return DataService.get_data_with_cluster_statistics().to_json()
+
+@eel.expose
+def DataService_get_clusters()-> Dict[str, List[Any]]:
+    return DataService.get_clusters()
