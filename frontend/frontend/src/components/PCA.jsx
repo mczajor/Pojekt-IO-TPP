@@ -18,6 +18,28 @@ export default function PCA({
     y: [],
   });
 
+  const [columnName, setColumnName] = useState("");
+  const [rowIndex, setRowIndex] = useState(-1);
+
+  function handleColumnClick(column) {
+    if (column === columnName) {
+      setColumnName("");
+    } else {
+      setColumnName(column);
+    }
+    setRowIndex(-1);
+  }
+
+  function handleRowClick(row, column) {
+    if (row === rowIndex && column === columnName) {
+      setColumnName("");
+      setRowIndex(-1);
+    } else {
+      setColumnName(column);
+      setRowIndex(row);
+    }
+  }
+
   function vizualize_callback(response) {
     let columnVector = ["Component", ...response["column_vector"]];
     let eigenvector_1 = ["Principal 1", ...response["eigenvector_1"]];
@@ -98,7 +120,8 @@ export default function PCA({
             <thead>
               <tr>
                 {data.columnVector.map((item, index) => (
-                  <th key={index}>{item}</th>
+                  <th key={index} onClick = {() => handleColumnClick(index)}
+                  className={(index === columnName && rowIndex === -1 ? "selected-column" : undefined)}>{item}</th>
                 ))}
               </tr>
             </thead>
@@ -106,14 +129,34 @@ export default function PCA({
             <tbody>
               <tr>
                 {data.eigenvector_1.map((item, index) => (
-                  <td key={index} className="data-body">
+                  <td key={index} className={(index === columnName && rowIndex === -1 ? "selected-column" : undefined) + " " + (
+                    rowIndex === 0 ? "selected-row" : undefined)}
+                  onClick={() => handleRowClick(0, index)}
+                  style={{
+                    backgroundColor:
+                      rowIndex === 0 &&
+                      index === columnName
+                        ? "rgb(68, 190, 59)"
+                        : undefined,
+                    opacity: 30,
+                  }}>
                     {item}
                   </td>
-                ))}
+                ))}s
               </tr>
               <tr>
                 {data.eigenvector_2.map((item, index) => (
-                  <td key={index} className="data-body">
+                  <td key={index} className={(index === columnName && rowIndex === -1 ? "selected-column" : undefined) + " " + (
+                  rowIndex === 1 ? "selected-row" : undefined)}
+                  onClick={() => handleRowClick(1, index)}
+                  style={{
+                    backgroundColor:
+                      rowIndex === 1 &&
+                      index === columnName
+                        ? "rgb(68, 190, 59)"
+                        : undefined,
+                    opacity: 30,
+                  }}>
                     {item}
                   </td>
                 ))}

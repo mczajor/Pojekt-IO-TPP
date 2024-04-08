@@ -26,7 +26,7 @@ export default function Normalization({
       return
     }
     let errorType = error.substring(0, 2);
-    if (errorType === "E0" || errorType == "E1") {
+    if (errorType === "E0" || errorType === "E1") {
       setErrorColumns(error.substring(2));
       setNormalized(false)
     }
