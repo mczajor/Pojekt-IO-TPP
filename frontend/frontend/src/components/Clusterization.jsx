@@ -40,9 +40,9 @@ export default function Clusteriazation({
     setselectedClusterizeType(+event.target.value);
   }
 
-  function handleclusterStatisticsType(event) {
-    console.log(event.target.value)
-    setClusterStatisticsType(event.target.value);
+  async function handleclusterStatisticsType(event) {
+    setClusterStatisticsType(() => event.target.value);
+    getEachClusterStatistics(event.target.value, setEachClusterStatistics)
   }
 
   function convertStrToIntArr(input) {
@@ -69,12 +69,13 @@ export default function Clusteriazation({
       if (clusterMetrics === undefined && tendecyScore === undefined && eachClusterStatistics === undefined){
         getClusterMetrics(setClusterMetrics);
         getClusterTendencyScore(setTendencyScore);
-        getEachClusterStatistics(setEachClusterStatistics);
+        getEachClusterStatistics(clusterStatisticsType, setEachClusterStatistics);
       }
     }
   }
+  loadClasters()
 
-  loadClasters();
+
 
   return (
     <div id="clusterize-buttons-container">
@@ -160,7 +161,7 @@ export default function Clusteriazation({
                 updateDataContent(updateFileContent_callback);
                 getClusterMetrics(setClusterMetrics);
                 getClusterTendencyScore(setTendencyScore);
-  getEachClusterStatistics(setEachClusterStatistics);
+                getEachClusterStatistics(clusterStatisticsType, setEachClusterStatistics);
 
               }}
             >
@@ -253,18 +254,18 @@ export default function Clusteriazation({
                   <table id="pca-table">
                     <thead>
                       <tr>
-                        {Object.keys(eachClusterStatistics[0]['Mean']).map(column => (
+                        <th>Cluster ID</th>
+                        {Object.keys(eachClusterStatistics[0]['Result']).map(column => (
                           <th key={column}>{column}</th>
                         ))}
-                        <th>Cluster Size</th>
                       </tr>
                     </thead>
                     <tbody>
                       {Object.keys(eachClusterStatistics).map(clusterId => (
                         <tr key={clusterId}>
-                          {Object.keys(eachClusterStatistics[clusterId][clusterStatisticsType]).map((columnName, value) =>
-                        <td key={columnName+value}>{eachClusterStatistics[clusterId][clusterStatisticsType][columnName]}</td>)}
-                        <td>{eachClusterStatistics[clusterId]['Cluster Size']}</td>
+                          <td>{clusterId}</td>
+                          {Object.keys(eachClusterStatistics[clusterId]['Result']).map(columnName =>
+                        <td key={columnName}>{eachClusterStatistics[clusterId]["Result"][columnName]}</td>)}
                         </tr>
                       ))}
                     </tbody>

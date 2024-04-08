@@ -1,6 +1,12 @@
 export const eachClusterStatisticsType = {
-  'Mean': 'Mean',
-  'Expected Value': 'Expected Value',
-  'Variance': 'Variance',
-  'Standard Deviation': 'Standard Deviation',
+  'Mean': 'Średnia',
+  'Variance': 'Wariancja',
+  'Standard Deviation': 'Odchylenie standardowe',
+  'Minimum': 'Wartość minimalna',
+  'Maximum': 'Wartość maksymalna',
+  'First Quartile': 'Pierwszy kwartyl',
+  'Second Quartile': "Drugi kwartyl",
+  'Third Quartile': "Trzeci kwartyl",
+  "Skewness": "Współczynnik skośności",
+  "Kurtosis": "Współczynnik kurtozy"
   };

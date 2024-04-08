@@ -349,7 +349,34 @@ class DataService(Singleton):
         }
 
     @classmethod
-    def get_each_cluster_statistics(cls) -> Dict[int, Dict]:
+    def calculate_cluster_statistics(cls, cluster_data , statistic_type):
+        if statistic_type == "Mean":
+            return cluster_data.mean()
+        if statistic_type == "Variance":
+            return cluster_data.var()
+        if statistic_type == "Standard Deviation":
+            return cluster_data.std()
+        if statistic_type == "Minimum":
+            return cluster_data.min()
+        if statistic_type == "Maximum":
+            return cluster_data.max()
+        if statistic_type == "First Quartile":
+            return cluster_data.quantile(0.25)
+        if statistic_type == "Second Quartile":
+            return cluster_data.quantile(0.4)
+        if statistic_type == "Third Quartile":
+            return cluster_data.quantile(0.75)
+        if statistic_type == "Skewness":
+            return cluster_data.skew()
+        if statistic_type == "Kurtosis":
+            return cluster_data.kurtosis()
+
+        else:
+            raise ValueError(f"Invalid statistic type: {statistic_type}")
+
+    @classmethod
+    def get_each_cluster_statistics(cls, statistic_type) -> Dict[int, Dict]:
+
         numeric_columns = cls._data.select_dtypes(include=['number']).columns
         data: Data = cls._data[numeric_columns]
         data['cluster_id'] = cls._last_clusters
@@ -357,22 +384,22 @@ class DataService(Singleton):
         unique_cluster_ids: List[int] = data['cluster_id'].unique()
 
         cluster_statistics: Dict[int, Dict] = {}
+
         for cluster_id in unique_cluster_ids:
             cluster_id = int(cluster_id)
             cluster_data: Data = data[data['cluster_id'] == cluster_id]
-            mean_values = dict(zip(cluster_data.columns, cluster_data.mean()))
-            expected_value = dict(zip(cluster_data.columns, cluster_data.sum() / len(cluster_data)))
-            variance_values = dict(zip(cluster_data.columns, cluster_data.var()))
-            std_deviation_values = dict(zip(cluster_data.columns, cluster_data.std()))
-            cluster_size: int = len(cluster_data)
+            cluster_data = cluster_data.drop(columns=['cluster_id'])
+            result = cls.calculate_cluster_statistics(cluster_data, statistic_type)
+            if result.isnull().values.any():
+                print("NULL")
+                continue
 
             cluster_statistics[cluster_id] = {
-                'Mean': mean_values,
-                'Expected Value': expected_value,
-                'Variance': variance_values,
-                'Standard Deviation': std_deviation_values,
-                'Cluster Size': cluster_size
+                'Result': dict(zip(cluster_data.columns, result))
             }
+
+
+
 
         return cluster_statistics
 
@@ -551,6 +578,11 @@ def DataService_normalize_categorical(columns: List[str], method_type: str|int =
 
 @eel.expose
 def DataService_normalize(columns: Optional[List[str]] = None, numerical_method_type: str|int = None, categorical_method_type: str|int = None) -> None:
+    if DataService.data().isnull().any().any():
+        columns_with_null = DataService.data().columns[DataService.data().isnull().any()]
+        print(columns_with_null[0])
+        error = ErrorCode.NULL_VALUES_ERROR + columns_with_null[0]
+        return error
     numerical: Optional[NumericalNormalizationType] = NumericalNormalizationType.MIN_MAX
     if numerical_method_type is not None:
         numerical = _check_if_valid_enum(numerical_method_type, NumericalNormalizationType)
@@ -665,8 +697,8 @@ def DataService_get_cluster_metrics() -> Dict[str, Any]:
 
 
 @eel.expose
-def DataService_get_each_cluster_statistics() -> Dict[int, Dict]:
-    return DataService.get_each_cluster_statistics()
+def DataService_get_each_cluster_statistics(statistic_type: str) -> Dict[int, Dict]:
+    return DataService.get_each_cluster_statistics(statistic_type)
 
 
 @eel.expose

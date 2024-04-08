@@ -28,10 +28,9 @@ export default function EditPanel({
   return (
     <>
       {editMode && (
-        <>
+        <>{getColumnType(tempColumnName, setCurrentType)}
           {selectedCurrentRowIndex === -1 && (
             <>
-              {getColumnType(tempColumnName, setCurrentType)}
               <div className="input-btn-container">
                 <input
                   type="text"
@@ -87,9 +86,11 @@ export default function EditPanel({
             </>
           )}
           {selectedCurrentRowIndex !== -1 && (
+            <>
+            <h2 >Typ: {currentType}</h2>
             <div className="input-btn-container">
               <input
-                type="text"
+                type={currentType === "Numeryczny" ? 'number' : 'text'}
                 value={newValue}
                 placeholder={
                   "(" +
@@ -121,7 +122,7 @@ export default function EditPanel({
                   Usuń rząd: {selectedCurrentRowIndex}
                 </button>
               )}
-            </div>
+            </div></>
           )}
         </>
       )}

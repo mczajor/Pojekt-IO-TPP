@@ -36,13 +36,14 @@ export function loadFile(setFileName) {
 
 export function normalize(
   selectedNumericalNormalization,
-  selectedCategoricalNormalization
+  selectedCategoricalNormalization,
+  error_callback
 ) {
   eel.DataService_normalize(
     null,
     selectedNumericalNormalization,
     selectedCategoricalNormalization
-  );
+  )(error_callback);
 }
 
 export function normalizedData(updateFileContent_callback) {
@@ -104,8 +105,8 @@ export function getClusterMetrics(clusterMetrics_callback){
   eel.DataService_get_cluster_metrics()(clusterMetrics_callback);
 }
 
-export function getEachClusterStatistics(eachClusterStatistics_callback){
-  eel.DataService_get_each_cluster_statistics()(eachClusterStatistics_callback);
+export async function getEachClusterStatistics(statistic_type, eachClusterStatistics_callback){
+  await eel.DataService_get_each_cluster_statistics(statistic_type)(eachClusterStatistics_callback);
 }
 
 export function getDataWithClusterStatistics(updateFileContent_callback) {
