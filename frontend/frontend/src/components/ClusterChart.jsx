@@ -9,7 +9,27 @@ export default function ClusterChart({ clusters, columnNames }) {
 
   const xValues = Object.keys(clusterCounts).map(Number);
   const yValues = Object.values(clusterCounts);
- 
+  const data_2 = {};
+  clusters.forEach((cluster, record) => {
+    if (!data_2[cluster]) {
+      data_2[cluster] = {
+        x:[],
+        y:[],
+        mode: "markers",
+        name: "Klaster " + cluster
+      }
+    }
+    data_2[cluster].x.push(record)
+    data_2[cluster].y.push(cluster)
+  })
+  
+  const data_1 = xValues.map((cluster, index) => ({
+    x:[cluster],
+    y:[yValues[index]],
+    type: 'bar',
+    name: "Klaster "+ index
+  }))
+  const data = Object.keys(data_2).map(cluster => data_2[cluster]);
 
   return (
     <>
@@ -20,14 +40,7 @@ export default function ClusterChart({ clusters, columnNames }) {
             <p>{columnNames}</p>
           </div>
           <Plot
-            data={[
-              {
-                x: xValues,
-                y: yValues,
-                type: "bar",
-                marker: { color: "red" },
-              },
-            ]}
+            data={data_1}
             layout={{
               width: 700,
               height: 500,
@@ -38,14 +51,7 @@ export default function ClusterChart({ clusters, columnNames }) {
           />
 
           <Plot
-            data={[
-              {
-                x: clusters.map((_, index) => index),
-                y: clusters,
-                mode: "markers",
-                marker: { color: "blue" },
-              },
-            ]}
+            data={data}
             layout={{
               width: 700,
               height: 500,

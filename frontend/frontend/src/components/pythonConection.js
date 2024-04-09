@@ -107,6 +107,7 @@ export function getClusterMetrics(clusterMetrics_callback){
 
 export async function getEachClusterStatistics(statistic_type, eachClusterStatistics_callback){
   await eel.DataService_get_each_cluster_statistics(statistic_type)(eachClusterStatistics_callback);
+  eel.DataService_get_each_cluster_statistics(statistic_type)(print_python_response);
 }
 
 export function getDataWithClusterStatistics(updateFileContent_callback) {

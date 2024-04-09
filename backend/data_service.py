@@ -391,11 +391,12 @@ class DataService(Singleton):
             cluster_data = cluster_data.drop(columns=['cluster_id'])
             result = cls.calculate_cluster_statistics(cluster_data, statistic_type)
             if result.isnull().values.any():
-                print("NULL")
                 continue
 
+            rounded_result = [round(num, 6) for num in result]
+
             cluster_statistics[cluster_id] = {
-                'Result': dict(zip(cluster_data.columns, result))
+                'Result': dict(zip(cluster_data.columns, rounded_result))
             }
 
 
