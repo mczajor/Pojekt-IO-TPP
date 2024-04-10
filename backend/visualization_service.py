@@ -33,8 +33,19 @@ class VisualizationService(Singleton):
         eigenvector_1 = pca_components_df.values[0]
         eigenvector_2 = pca_components_df.values[1]
 
+        pc1_explains = round(round(pca.explained_variance_ratio_[0], 6) * 100, 1)
+        pc2_explains = round(round(pca.explained_variance_ratio_[1], 6) * 100, 1)
+
+        contributions_pc1 = np.abs(pca.components_[0] * pca.components_[0])
+        contributions_pc2 = np.abs(pca.components_[1] * pca.components_[1])
+
+        contributions_pc1_rounded = [round(round(x, 6) * 100, 1) for x in contributions_pc1]
+        contributions_pc2_rounded = [round(round(x, 6) * 100, 1) for x in contributions_pc2]
+
         eigenvector_1_rounded = [round(num, 6) for num in eigenvector_1]
         eigenvector_2_rounded = [round(num, 6) for num in eigenvector_2]
+
+        pc_explains = [pc1_explains, pc2_explains]
 
         x = merged_dataframe['PC1'].values
         y = merged_dataframe['PC2'].values
@@ -44,10 +55,13 @@ class VisualizationService(Singleton):
 
         data = {
             "column_vector": column_vector,
-            "eigenvector_1": eigenvector_1_rounded,  # Konwertowanie na listę, jeśli to jest numpy array
-            "eigenvector_2": eigenvector_2_rounded,  # Konwertowanie na listę, jeśli to jest numpy array
+            "eigenvector_1": eigenvector_1_rounded,
+            "eigenvector_2": eigenvector_2_rounded,
             "x": x_filtered.tolist(),
-            "y": y_filtered.tolist()
+            "y": y_filtered.tolist(),
+            "pc_explains": pc_explains,
+            "contributions_pc1": contributions_pc1_rounded,
+            "contributions_pc2": contributions_pc2_rounded
         }
 
         return data

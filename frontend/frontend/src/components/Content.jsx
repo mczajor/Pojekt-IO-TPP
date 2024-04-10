@@ -136,6 +136,7 @@ export default function Content({
     });
 
     updateDataContent(updateFileContent_callback);
+    setNormalized(false);
   }
 
   let content = (

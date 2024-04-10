@@ -31,6 +31,27 @@ export default function Clusteriazation({
   const [tendecyScore, setTendencyScore] = useState(undefined);
   const [eachClusterStatistics, setEachClusterStatistics] = useState(undefined);
   const [clusterStatisticsType, setClusterStatisticsType] = useState("Mean")
+  const [columnName, setColumnName] = useState("");
+  const [rowIndex, setRowIndex] = useState(-1);
+
+  function handleColumnClick(column) {
+    if (column === columnName) {
+      setColumnName("");
+    } else {
+      setColumnName(column);
+    }
+    setRowIndex(-1);
+  }
+
+  function handleRowClick(row, column) {
+    if (row === rowIndex && column === columnName) {
+      setColumnName("");
+      setRowIndex(-1);
+    } else {
+      setColumnName(column);
+      setRowIndex(row);
+    }
+  }
 
   function handleSilhouette() {
     suggestClusterNb([...columnsSet], selectedClusterizeType, setSilhouette);
@@ -40,9 +61,9 @@ export default function Clusteriazation({
     setselectedClusterizeType(+event.target.value);
   }
 
-  function handleclusterStatisticsType(event) {
-    console.log(event.target.value)
-    setClusterStatisticsType(event.target.value);
+  async function handleclusterStatisticsType(event) {
+    setClusterStatisticsType(() => event.target.value);
+    getEachClusterStatistics(event.target.value, setEachClusterStatistics)
   }
 
   function convertStrToIntArr(input) {
@@ -69,12 +90,13 @@ export default function Clusteriazation({
       if (clusterMetrics === undefined && tendecyScore === undefined && eachClusterStatistics === undefined){
         getClusterMetrics(setClusterMetrics);
         getClusterTendencyScore(setTendencyScore);
-        getEachClusterStatistics(setEachClusterStatistics);
+        getEachClusterStatistics(clusterStatisticsType, setEachClusterStatistics);
       }
     }
   }
+  loadClasters()
 
-  loadClasters();
+
 
   return (
     <div id="clusterize-buttons-container">
@@ -160,7 +182,7 @@ export default function Clusteriazation({
                 updateDataContent(updateFileContent_callback);
                 getClusterMetrics(setClusterMetrics);
                 getClusterTendencyScore(setTendencyScore);
-  getEachClusterStatistics(setEachClusterStatistics);
+                getEachClusterStatistics(clusterStatisticsType, setEachClusterStatistics);
 
               }}
             >
@@ -253,18 +275,42 @@ export default function Clusteriazation({
                   <table id="pca-table">
                     <thead>
                       <tr>
-                        {Object.keys(eachClusterStatistics[0]['Mean']).map(column => (
-                          <th key={column}>{column}</th>
+                        <th onClick={() => handleColumnClick("Cluster ID")}
+                        className={("Cluster ID" === columnName && rowIndex === -1 ? "selected-column" : undefined)}>Cluster ID</th>
+                        {Object.keys(eachClusterStatistics[0]['Result']).map(column => (
+                          <th key={column} onClick={() => handleColumnClick(column)}
+                          className={(column === columnName && rowIndex === -1 ? "selected-column" : undefined)}>{column}</th>
                         ))}
-                        <th>Cluster Size</th>
                       </tr>
                     </thead>
                     <tbody>
                       {Object.keys(eachClusterStatistics).map(clusterId => (
                         <tr key={clusterId}>
-                          {Object.keys(eachClusterStatistics[clusterId][clusterStatisticsType]).map((columnName, value) =>
-                        <td key={columnName+value}>{eachClusterStatistics[clusterId][clusterStatisticsType][columnName]}</td>)}
-                        <td>{eachClusterStatistics[clusterId]['Cluster Size']}</td>
+                          <td onClick = {() => handleRowClick(clusterId, "Cluster ID")} 
+                          className={("Cluster ID" === columnName && rowIndex === -1 ? "selected-column" : undefined) + " " +
+                          (clusterId === rowIndex ? "selected-row" : undefined)}
+                          style={{
+                            backgroundColor:
+                              rowIndex === clusterId &&
+                              "Cluster ID" === columnName
+                                ? "rgb(68, 190, 59)"
+                                : undefined,
+                            opacity: 30,
+                          }}>{clusterId}
+                          </td>
+                          {Object.keys(eachClusterStatistics[clusterId]['Result']).map(column =>
+                        <td key={column} onClick = {() => handleRowClick(clusterId, column)} 
+                        className={(column === columnName && rowIndex === -1 ? "selected-column" : undefined) + " " + 
+                      (clusterId === rowIndex ? "selected-row" : undefined)}
+                      style={{
+                        backgroundColor:
+                          rowIndex === clusterId &&
+                          column === columnName
+                            ? "rgb(68, 190, 59)"
+                            : undefined,
+                        opacity: 30,
+                      }}
+                        >{eachClusterStatistics[clusterId]["Result"][column]}</td>)}
                         </tr>
                       ))}
                     </tbody>
